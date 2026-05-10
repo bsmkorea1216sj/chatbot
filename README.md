@@ -17,3 +17,15 @@ A simple Streamlit app that shows how to build a chatbot using OpenAI's GPT-3.5.
    ```
    $ streamlit run streamlit_app.py
    ```
+
+### Claude Code CLI Setup
+
+Requires Node.js 18+.
+
+```bash
+# Install
+npm install -g @anthropic-ai/claude-code
+
+# Verify
+claude --version
+```
