@@ -3,131 +3,243 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AWS 이벤트 관리 시스템</title>
+  <title>AWS Events Management</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Segoe UI', sans-serif; background: #0f1923; color: #e0e0e0; min-height: 100vh; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
     header {
-      background: linear-gradient(135deg, #1a2a3a, #0d47a1);
-      padding: 24px 40px;
-      display: flex; align-items: center; gap: 16px;
-      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      background: #1a1f2e;
+      padding: 28px 20px 20px;
+      text-align: center;
     }
-    header img { width: 48px; }
-    header h1 { font-size: 1.6rem; color: #fff; }
-    header span { font-size: 0.85rem; color: #90caf9; margin-left: auto; }
-    .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
-    .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 36px; }
-    .info-card {
-      background: #1a2535; border: 1px solid #263344; border-radius: 10px;
-      padding: 20px; display: flex; flex-direction: column; gap: 6px;
+    header h1 {
+      color: #ffffff;
+      font-size: 1.7rem;
+      font-weight: 700;
+      letter-spacing: -.3px;
+      margin-bottom: 14px;
     }
-    .info-card .label { font-size: 0.75rem; color: #78909c; text-transform: uppercase; letter-spacing: 1px; }
-    .info-card .value { font-size: 1rem; color: #64b5f6; font-weight: 600; word-break: break-all; }
-    h2 { font-size: 1.2rem; color: #90caf9; margin-bottom: 16px; border-left: 4px solid #1565c0; padding-left: 12px; }
-    table { width: 100%; border-collapse: collapse; background: #1a2535; border-radius: 10px; overflow: hidden; margin-bottom: 36px; }
-    thead { background: #1565c0; }
-    th { padding: 14px 16px; text-align: left; font-size: 0.85rem; color: #e3f2fd; font-weight: 600; }
-    td { padding: 13px 16px; border-bottom: 1px solid #263344; font-size: 0.9rem; }
-    tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #1e2d3d; }
+    .btn-service {
+      background: #4a90e2;
+      color: #fff;
+      border: none;
+      padding: 7px 22px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      letter-spacing: .5px;
+    }
+    .btn-service:hover { background: #357abd; }
+
+    /* ── Main ── */
+    main {
+      max-width: 680px;
+      margin: 28px auto;
+      padding: 0 16px;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: #ffffff;
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.08);
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1a1f2e;
+      margin-bottom: 16px;
+    }
+
+    /* ── Refresh Button ── */
+    .btn-refresh {
+      background: #e8622a;
+      color: #fff;
+      border: none;
+      padding: 8px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      margin-bottom: 18px;
+      font-weight: 600;
+    }
+    .btn-refresh:hover { background: #c9501f; }
+
+    /* ── Status List ── */
+    .status-list {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .status-item {
+      font-size: 0.92rem;
+      color: #333;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-item span.label { color: #555; }
+    .status-item span.value { color: #1a1f2e; font-weight: 600; }
+
+    /* ── Event List ── */
+    .event-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .event-item {
+      border: 1px solid #e8eaed;
+      border-radius: 10px;
+      padding: 16px 18px;
+      background: #fafbfc;
+    }
+    .event-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1f2e;
+      margin-bottom: 8px;
+    }
+    .event-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.84rem;
+      color: #555;
+    }
+    .event-meta span { display: flex; align-items: center; gap: 4px; }
     .badge {
-      display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: .3px;
     }
-    .badge-green { background: #1b5e20; color: #a5d6a7; }
-    .badge-blue  { background: #0d2b6e; color: #90caf9; }
-    .badge-yellow{ background: #4a3700; color: #ffe082; }
-    .badge-red   { background: #4e1010; color: #ef9a9a; }
-    footer { text-align: center; padding: 24px; color: #455a64; font-size: 0.8rem; margin-top: 20px; }
+    .badge-completed { background: #e8f5e9; color: #2e7d32; }
+    .badge-upcoming  { background: #e3f2fd; color: #1565c0; }
+    .badge-ongoing   { background: #fff3e0; color: #e65100; }
+    .badge-cancelled { background: #fce4ec; color: #b71c1c; }
   </style>
 </head>
 <body>
+
 <header>
-  <div>
-    <h1>☁️ AWS 이벤트 관리 시스템</h1>
-  </div>
-  <span id="clock"></span>
+  <h1>🚀 AWS Events Management</h1>
+  <button class="btn-service">서비스</button>
 </header>
 
-<div class="container">
-  <!-- 컨테이너 정보 -->
-  <div class="info-grid">
-    <div class="info-card">
-      <span class="label">Hostname</span>
-      <span class="value" id="hostname">로딩 중...</span>
+<main>
+  <!-- 실시간 이벤트 목록 -->
+  <div class="card">
+    <div class="card-title">실시간 이벤트 목록</div>
+    <button class="btn-refresh" onclick="loadEvents()">새로고침</button>
+
+    <!-- 상태 표시 -->
+    <div class="status-list" style="margin-bottom:20px">
+      <div class="status-item">🌐 <span class="label">API 상태:</span><span class="value" id="api-status">연결됨</span></div>
+      <div class="status-item">🗄️ <span class="label">S3 호스팅:</span><span class="value" id="s3-status">활성화됨</span></div>
+      <div class="status-item">⚡ <span class="label">Lambda:</span><span class="value">Python 3.12</span></div>
+      <div class="status-item">🗃️ <span class="label">DynamoDB:</span><span class="value" id="db-status">연결됨</span></div>
     </div>
-    <div class="info-card">
-      <span class="label">Region</span>
-      <span class="value">ap-northeast-2</span>
-    </div>
-    <div class="info-card">
-      <span class="label">Cluster</span>
-      <span class="value">CloudArchitect-Lab-Cluster</span>
-    </div>
-    <div class="info-card">
-      <span class="label">Service</span>
-      <span class="value">cloudarch-demo-service</span>
-    </div>
-    <div class="info-card">
-      <span class="label">Container Port</span>
-      <span class="value">8080</span>
-    </div>
-    <div class="info-card">
-      <span class="label">Image</span>
-      <span class="value">cloudarchitect-demo-events:latest</span>
+
+    <!-- 이벤트 카드 목록 -->
+    <div class="event-list" id="event-list">
+      <!-- JS로 렌더링 -->
     </div>
   </div>
-
-  <!-- 이벤트 목록 -->
-  <h2>이벤트 목록</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>#</th><th>이벤트명</th><th>날짜</th><th>위치</th><th>참가자</th><th>상태</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr><td>1</td><td>AWS re:Invent 2025</td><td>2025-12-01</td><td>Las Vegas, NV</td><td>50,000+</td><td><span class="badge badge-green">진행중</span></td></tr>
-      <tr><td>2</td><td>AWS Summit Seoul 2025</td><td>2025-05-14</td><td>서울 COEX</td><td>12,000+</td><td><span class="badge badge-blue">완료</span></td></tr>
-      <tr><td>3</td><td>AWS GameDay Korea</td><td>2025-07-20</td><td>온라인</td><td>800</td><td><span class="badge badge-yellow">예정</span></td></tr>
-      <tr><td>4</td><td>Cloud Architecture Workshop</td><td>2025-08-05</td><td>판교 AWS 오피스</td><td>200</td><td><span class="badge badge-yellow">예정</span></td></tr>
-      <tr><td>5</td><td>Serverless Bootcamp</td><td>2025-03-10</td><td>온라인</td><td>1,500</td><td><span class="badge badge-blue">완료</span></td></tr>
-      <tr><td>6</td><td>ECS Fargate Hands-on</td><td>2025-09-15</td><td>서울 강남</td><td>300</td><td><span class="badge badge-yellow">예정</span></td></tr>
-      <tr><td>7</td><td>DevOps Korea Meetup</td><td>2025-10-22</td><td>홍대 WeWork</td><td>450</td><td><span class="badge badge-yellow">예정</span></td></tr>
-      <tr><td>8</td><td>ML/AI on AWS Summit</td><td>2025-04-18</td><td>부산 BEXCO</td><td>3,200</td><td><span class="badge badge-red">취소</span></td></tr>
-    </tbody>
-  </table>
-
-  <!-- Docker 컨테이너 정보 -->
-  <h2>Docker 컨테이너 정보</h2>
-  <table>
-    <thead>
-      <tr><th>항목</th><th>값</th></tr>
-    </thead>
-    <tbody>
-      <tr><td>베이스 이미지</td><td>nginx:alpine</td></tr>
-      <tr><td>노출 포트</td><td>8080</td></tr>
-      <tr><td>오케스트레이션</td><td>AWS ECS Fargate</td></tr>
-      <tr><td>CPU</td><td>256 units (0.25 vCPU)</td></tr>
-      <tr><td>Memory</td><td>512 MiB</td></tr>
-      <tr><td>로그 드라이버</td><td>awslogs → /ecs/cloudarch-demo-task</td></tr>
-      <tr><td>ECR 리포지토리</td><td>349139558568.dkr.ecr.ap-northeast-2.amazonaws.com/cloudarchitect-demo-events</td></tr>
-      <tr><td>태스크 정의</td><td>cloudarch-demo-task:latest</td></tr>
-    </tbody>
-  </table>
-</div>
-
-<footer>AWS ECS Fargate Demo · CloudArchitect Lab · ap-northeast-2</footer>
+</main>
 
 <script>
-  // 시계
-  function tick() {
-    document.getElementById('clock').textContent = new Date().toLocaleString('ko-KR');
-  }
-  tick(); setInterval(tick, 1000);
+  const EVENTS = [
+    {
+      name:     'AWS 클라우드 기초 워크샵',
+      date:     '2025-03-15',
+      location: '서울',
+      attendees: 50,
+      status:   'completed',
+    },
+    {
+      name:     'AWS Summit Seoul 2025',
+      date:     '2025-05-14',
+      location: '서울 COEX',
+      attendees: 12000,
+      status:   'completed',
+    },
+    {
+      name:     'ECS Fargate Hands-on',
+      date:     '2025-09-15',
+      location: '서울 강남',
+      attendees: 300,
+      status:   'upcoming',
+    },
+    {
+      name:     'AWS re:Invent 2025',
+      date:     '2025-12-01',
+      location: 'Las Vegas',
+      attendees: 50000,
+      status:   'upcoming',
+    },
+    {
+      name:     'AWS GameDay Korea',
+      date:     '2025-07-20',
+      location: '온라인',
+      attendees: 800,
+      status:   'ongoing',
+    },
+    {
+      name:     'ML/AI on AWS Summit',
+      date:     '2025-04-18',
+      location: '부산 BEXCO',
+      attendees: 3200,
+      status:   'cancelled',
+    },
+  ];
 
-  // 호스트명 (ECS 환경에서는 컨테이너 ID)
-  document.getElementById('hostname').textContent = location.hostname || 'fargate-container';
+  const STATUS_LABEL = {
+    completed: '완료',
+    upcoming:  '예정',
+    ongoing:   '진행중',
+    cancelled: '취소',
+  };
+  const STATUS_CLASS = {
+    completed: 'badge-completed',
+    upcoming:  'badge-upcoming',
+    ongoing:   'badge-ongoing',
+    cancelled: 'badge-cancelled',
+  };
+
+  function fmt(n) {
+    return n >= 1000 ? (n / 1000).toFixed(0) + ',000+' : n + '명';
+  }
+
+  function loadEvents() {
+    const list = document.getElementById('event-list');
+    list.innerHTML = '';
+    EVENTS.forEach(ev => {
+      list.innerHTML += `
+        <div class="event-item">
+          <div class="event-name">${ev.name}</div>
+          <div class="event-meta">
+            <span>📅 ${ev.date}</span>
+            <span>📍 ${ev.location}</span>
+            <span>👥 ${fmt(ev.attendees)}</span>
+            <span><span class="badge ${STATUS_CLASS[ev.status]}">${STATUS_LABEL[ev.status]}</span></span>
+          </div>
+        </div>`;
+    });
+  }
+
+  loadEvents();
 </script>
 </body>
 </html>
