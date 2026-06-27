@@ -23,7 +23,6 @@ LAMBDA_CONFIGS = [
         "timeout": 120,
         "memory": 512,
         "env": {
-            "AWS_REGION": REGION,
             "DYNAMODB_PRICES_TABLE": "miim-prices",
         },
         "layers": ["yfinance"],
@@ -35,7 +34,6 @@ LAMBDA_CONFIGS = [
         "timeout": 180,
         "memory": 512,
         "env": {
-            "AWS_REGION": REGION,
             "DYNAMODB_PRICES_TABLE": "miim-prices",
             "DYNAMODB_POSTS_TABLE": "miim-posts",
             "ANTHROPIC_SECRET_NAME": "miim/anthropic-api-key",
@@ -49,7 +47,6 @@ LAMBDA_CONFIGS = [
         "timeout": 60,
         "memory": 256,
         "env": {
-            "AWS_REGION": REGION,
             "DYNAMODB_POSTS_TABLE": "miim-posts",
             "S3_BUCKET_NAME": S3_BUCKET,
             "CLOUDFRONT_DOMAIN": CLOUDFRONT_DOMAIN,
