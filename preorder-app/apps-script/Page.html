@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<base target="_top" />
+<meta charset="UTF-8" />
+<?!= include('Stylesheet'); ?>
+</head>
+<body>
+<div class="app">
+  <header class="app-header">
+    <button class="icon-btn" aria-label="뒤로가기" type="button">&lt;</button>
+    <h1 class="app-header__title">우리 가게 최신상품</h1>
+    <div class="app-header__actions">
+      <button class="icon-btn cart-btn" aria-label="장바구니" type="button">
+        🛒<span class="badge" id="cartBadge">0</span>
+      </button>
+      <button class="icon-btn" aria-label="메뉴" type="button">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero__text">
+        <span class="pill pill--new">NEW · 우리 가게 최신상품</span>
+        <h2 class="hero__title">사전 구매신청</h2>
+        <p class="hero__subcopy">출시 전, 특별한 혜택으로 미리 만나보세요!</p>
+        <ul class="hero__benefits">
+          <li><span class="hero__benefit-icon">%</span>최대 15% 할인</li>
+          <li><span class="hero__benefit-icon">◆</span>한정 수량 혜택</li>
+          <li><span class="hero__benefit-icon">🚚</span>우선 배송</li>
+        </ul>
+      </div>
+      <div class="hero__image">
+        <div class="hero__image-backdrop"></div>
+        <img id="heroProductImage" src="" alt="" />
+      </div>
+    </section>
+
+    <section class="info-grid">
+      <div class="info-card">
+        <span class="badge-tag">사전예약 기간</span>
+        <p class="info-card__range" id="reservationRange">-</p>
+        <div class="countdown" id="countdown">
+          <div class="countdown__unit"><span id="cdDays">00</span><small>일</small></div>
+          <div class="countdown__unit"><span id="cdHours">00</span><small>시간</small></div>
+          <div class="countdown__unit"><span id="cdMinutes">00</span><small>분</small></div>
+          <div class="countdown__unit"><span id="cdSeconds">00</span><small>초</small></div>
+        </div>
+      </div>
+      <div class="info-card">
+        <span class="badge-tag">출시 예정일</span>
+        <p class="info-card__range" id="releaseDate">-</p>
+        <p class="info-card__notice">🔔 출시 알림을 신청하시면 오픈과 동시에 안내드릴게요.</p>
+        <button type="button" class="btn btn--outline" id="notifyBtn">알림 신청</button>
+      </div>
+    </section>
+
+    <section class="product-card">
+      <div class="product-card__thumb">
+        <img id="productImage" src="" alt="" />
+        <span class="pill pill--new" id="productBadge">NEW</span>
+      </div>
+      <div class="product-card__body">
+        <h3 id="productName">-</h3>
+        <p class="product-card__desc" id="productDesc"></p>
+        <div class="product-card__price">
+          <span class="price price--original" id="priceOriginal"></span>
+          <span class="price price--sale" id="priceSale"></span>
+          <span class="discount-badge" id="discountBadge"></span>
+        </div>
+        <div class="stepper">
+          <button type="button" class="stepper__btn" id="qtyMinus" aria-label="수량 감소">−</button>
+          <input type="number" id="qtyInput" class="stepper__input" value="1" min="1" inputmode="numeric" />
+          <button type="button" class="stepper__btn" id="qtyPlus" aria-label="수량 증가">+</button>
+        </div>
+        <p class="product-card__total">결제예정금액 <strong id="totalAmount">-</strong></p>
+      </div>
+    </section>
+
+    <section class="form-card">
+      <h3 class="form-card__title">신청자 정보</h3>
+      <form id="applicationForm" novalidate>
+        <label class="field">
+          <span class="field__icon">👤</span>
+          <input type="text" id="name" name="name" placeholder="이름" autocomplete="name" required />
+        </label>
+        <label class="field">
+          <span class="field__icon">📞</span>
+          <input type="tel" id="phone" name="phone" placeholder="연락처 (- 없이 입력)" autocomplete="tel" required />
+        </label>
+        <label class="field">
+          <span class="field__icon">✉️</span>
+          <input type="email" id="email" name="email" placeholder="이메일" autocomplete="email" required />
+        </label>
+
+        <label class="consent">
+          <input type="checkbox" id="agree" name="agree" required />
+          <span>개인정보 수집·이용에 동의합니다. (필수)</span>
+        </label>
+        <button type="button" id="agreeDetailBtn" class="link-btn">자세히 보기</button>
+        <div class="consent-detail" id="agreeDetail" hidden>
+          <p>
+            수집 항목: 이름, 연락처, 이메일<br />
+            수집 목적: 사전 구매신청 접수 및 안내<br />
+            보유 기간: 신청 접수일로부터 1년
+          </p>
+        </div>
+
+        <p class="form-error" id="formError" hidden></p>
+
+        <button type="submit" class="btn btn--primary btn--block" id="submitBtn">사전 구매신청하기</button>
+      </form>
+    </section>
+
+    <footer class="notice-list">
+      <p>· 사전 구매신청은 결제 없이 신청만 가능합니다.</p>
+      <p>· 실제 결제는 출시 후 개별 안내 예정입니다.</p>
+      <p>· 한정 수량으로 조기 마감될 수 있습니다.</p>
+    </footer>
+  </main>
+</div>
+
+<div class="modal-overlay" id="successModal" hidden>
+  <div class="modal">
+    <div class="modal__icon">✅</div>
+    <h3>신청이 완료되었습니다</h3>
+    <p id="successMessage"></p>
+    <button type="button" class="btn btn--primary btn--block" id="closeModalBtn">확인</button>
+  </div>
+</div>
+
+<script>
+  window.PRE_ORDER_CONFIG = {
+    webAppUrl: "<?= webAppUrl ?>",
+    productId: "",
+  };
+</script>
+<?!= include('JavaScript'); ?>
+</body>
+</html>
