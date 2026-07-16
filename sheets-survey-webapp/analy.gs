@@ -4,6 +4,9 @@
  * 같은 시트의 오른쪽 영역(F열~)에 요약 표와
  * AI별 원차트, 무료/유료 사용유형 원차트를 생성합니다.
  *
+ * AI별 표/차트와 사용유형 표/차트를 좌우로 분리 배치하여
+ * (F~G열 vs I~J열) 두 차트가 겹쳐서 안 보이는 문제를 방지합니다.
+ *
  * 사용법: Apps Script 편집기에서 이 파일 저장 후,
  * 스프레드시트를 새로고침하면 상단 메뉴에 "설문 분석"이 생기고
  * "차트 생성/갱신"을 클릭하면 됩니다. (직접 generateAnalysis 함수를
@@ -11,8 +14,10 @@
  */
 
 var RESPONSES_SHEET_NAME = 'Responses';
-var SUMMARY_START_COL = 6; // F열부터 요약 영역 시작 (A~D는 응답 데이터: 타임스탬프/AI/기타/무료·유료)
-var SUMMARY_AREA_COLS = 6; // 요약 영역으로 비워둘 열 수 (F~K)
+var AI_TABLE_COL = 6;       // F열: AI별 표
+var PRICING_TABLE_COL = 9;  // I열: 사용유형 표 (AI 차트와 겹치지 않도록 간격을 둠)
+var CLEAR_START_COL = 6;    // F열부터
+var CLEAR_NUM_COLS = 12;    // F~Q열까지 요약 영역으로 확보 후 초기화
 
 function onOpen() {
   SpreadsheetApp.getUi()
@@ -22,10 +27,11 @@ function onOpen() {
 }
 
 function generateAnalysis() {
+  var ui = SpreadsheetApp.getUi();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName(RESPONSES_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) {
-    SpreadsheetApp.getUi().alert('집계할 응답 데이터가 없습니다. (' + RESPONSES_SHEET_NAME + ' 시트 확인)');
+    ui.alert('집계할 응답 데이터가 없습니다. (' + RESPONSES_SHEET_NAME + ' 시트 확인)');
     return;
   }
 
@@ -39,7 +45,7 @@ function generateAnalysis() {
   var pricingIdx = headers.indexOf('무료/유료');
 
   if (aiIdx === -1 || pricingIdx === -1) {
-    SpreadsheetApp.getUi().alert('시트 헤더가 예상과 다릅니다. "사용하는 AI", "무료/유료" 열이 필요합니다.');
+    ui.alert('시트 헤더가 예상과 다릅니다. "사용하는 AI", "무료/유료" 열이 필요합니다.');
     return;
   }
 
@@ -61,38 +67,35 @@ function generateAnalysis() {
 
   // 기존 요약 영역/차트 정리 (이 스크립트가 만든 F열 이후 영역만 초기화)
   sheet.getCharts().forEach(function (chart) { sheet.removeChart(chart); });
-  sheet.getRange(1, SUMMARY_START_COL, sheet.getMaxRows(), SUMMARY_AREA_COLS).clearContent();
+  sheet.getRange(1, CLEAR_START_COL, sheet.getMaxRows(), CLEAR_NUM_COLS).clearContent();
 
-  var col = SUMMARY_START_COL;
-
-  // AI별 집계 표
-  sheet.getRange(1, col).setValue('사용 AI').setFontWeight('bold');
-  sheet.getRange(1, col + 1).setValue('응답 수').setFontWeight('bold');
+  // AI별 집계 표 (F~G열)
+  sheet.getRange(1, AI_TABLE_COL).setValue('사용 AI').setFontWeight('bold');
+  sheet.getRange(1, AI_TABLE_COL + 1).setValue('응답 수').setFontWeight('bold');
   var aiKeys = Object.keys(aiCounts);
   aiKeys.forEach(function (key, i) {
-    sheet.getRange(2 + i, col).setValue(key);
-    sheet.getRange(2 + i, col + 1).setValue(aiCounts[key]);
+    sheet.getRange(2 + i, AI_TABLE_COL).setValue(key);
+    sheet.getRange(2 + i, AI_TABLE_COL + 1).setValue(aiCounts[key]);
   });
 
-  // 무료/유료 집계 표 (AI 표 아래쪽에 배치)
-  var pricingStartRow = aiKeys.length + 4;
-  sheet.getRange(pricingStartRow, col).setValue('사용유형').setFontWeight('bold');
-  sheet.getRange(pricingStartRow, col + 1).setValue('응답 수').setFontWeight('bold');
+  // 무료/유료 집계 표 (I~J열, AI 표와 같은 줄에서 시작하되 열을 분리)
+  sheet.getRange(1, PRICING_TABLE_COL).setValue('사용유형').setFontWeight('bold');
+  sheet.getRange(1, PRICING_TABLE_COL + 1).setValue('응답 수').setFontWeight('bold');
   var pricingKeys = Object.keys(pricingCounts);
   pricingKeys.forEach(function (key, i) {
-    sheet.getRange(pricingStartRow + 1 + i, col).setValue(key);
-    sheet.getRange(pricingStartRow + 1 + i, col + 1).setValue(pricingCounts[key]);
+    sheet.getRange(2 + i, PRICING_TABLE_COL).setValue(key);
+    sheet.getRange(2 + i, PRICING_TABLE_COL + 1).setValue(pricingCounts[key]);
   });
 
   SpreadsheetApp.flush();
 
-  // AI별 원차트
+  // AI별 원차트: F열 표 아래쪽에 배치 (표 바로 아래, 다른 차트와 열이 겹치지 않음)
   if (aiKeys.length > 0) {
     var aiChart = sheet.newChart()
       .asPieChart()
-      .addRange(sheet.getRange(1, col, aiKeys.length + 1, 2))
+      .addRange(sheet.getRange(1, AI_TABLE_COL, aiKeys.length + 1, 2))
       .setNumHeaders(1)
-      .setPosition(2, col + 3, 0, 0)
+      .setPosition(aiKeys.length + 3, AI_TABLE_COL, 0, 0)
       .setOption('title', 'AI별 사용 비율')
       .setOption('pieSliceText', 'percentage')
       .setOption('width', 480)
@@ -101,13 +104,13 @@ function generateAnalysis() {
     sheet.insertChart(aiChart);
   }
 
-  // 무료/유료 사용유형 원차트
+  // 무료/유료 사용유형 원차트: I열 표 아래쪽에 배치 (AI 차트와 열이 분리되어 겹치지 않음)
   if (pricingKeys.length > 0) {
     var pricingChart = sheet.newChart()
       .asPieChart()
-      .addRange(sheet.getRange(pricingStartRow, col, pricingKeys.length + 1, 2))
+      .addRange(sheet.getRange(1, PRICING_TABLE_COL, pricingKeys.length + 1, 2))
       .setNumHeaders(1)
-      .setPosition(pricingStartRow + 2, col + 3, 0, 0)
+      .setPosition(pricingKeys.length + 3, PRICING_TABLE_COL, 0, 0)
       .setOption('title', '무료/유료 사용유형 비율')
       .setOption('pieSliceText', 'percentage')
       .setOption('width', 480)
@@ -116,5 +119,8 @@ function generateAnalysis() {
     sheet.insertChart(pricingChart);
   }
 
-  sheet.autoResizeColumns(col, 2);
+  sheet.autoResizeColumns(AI_TABLE_COL, 2);
+  sheet.autoResizeColumns(PRICING_TABLE_COL, 2);
+
+  ui.alert('설문 분석 차트가 생성/갱신되었습니다. (Responses 시트 F열 이후 영역 확인)');
 }
