@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans KR', Arial, sans-serif;
+      background: #f5f6f8;
+      margin: 0;
+      padding: 24px 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      padding: 32px 24px;
+      max-width: 480px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+      color: #202124;
+    }
+    p.desc {
+      color: #5f6368;
+      font-size: 14px;
+      margin: 0 0 24px;
+    }
+    fieldset {
+      border: none;
+      padding: 0;
+      margin: 0 0 24px;
+    }
+    legend {
+      font-size: 15px;
+      font-weight: 600;
+      color: #202124;
+      margin-bottom: 10px;
+      padding: 0;
+    }
+    label.option {
+      display: flex;
+      align-items: center;
+      padding: 10px 12px;
+      border: 1px solid #dadce0;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      color: #3c4043;
+      transition: border-color .15s, background .15s;
+    }
+    label.option:hover {
+      border-color: #4285f4;
+      background: #f8faff;
+    }
+    label.option input[type="radio"] {
+      margin-right: 10px;
+    }
+    input[type="text"]#aiToolOther {
+      width: 100%;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border: 1px solid #dadce0;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background: #4285f4;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #a8c4f7;
+      cursor: not-allowed;
+    }
+    #message {
+      margin-top: 16px;
+      font-size: 14px;
+      text-align: center;
+    }
+    #message.error { color: #d93025; }
+    #message.success { color: #188038; }
+    #thankyou {
+      display: none;
+      text-align: center;
+      padding: 20px 0;
+    }
+    #thankyou h2 {
+      color: #188038;
+      margin-bottom: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div id="formWrap">
+      <h1>AI 사용 설문</h1>
+      <p class="desc">간단한 설문에 참여해 주세요. 응답은 구글 시트에 자동으로 저장됩니다.</p>
+
+      <form id="surveyForm">
+        <fieldset>
+          <legend>1. 내가 사용하는 AI는 무엇인가?</legend>
+          <label class="option">
+            <input type="radio" name="aiTool" value="제미니" required>
+            제미니
+          </label>
+          <label class="option">
+            <input type="radio" name="aiTool" value="챗지피티">
+            챗지피티
+          </label>
+          <label class="option">
+            <input type="radio" name="aiTool" value="클로드">
+            클로드
+          </label>
+          <label class="option">
+            <input type="radio" name="aiTool" value="기타" id="aiToolOtherRadio">
+            기타
+          </label>
+          <input type="text" id="aiToolOther" placeholder="사용하는 AI를 입력해 주세요">
+        </fieldset>
+
+        <fieldset>
+          <legend>2. 무료인가 유료인가?</legend>
+          <label class="option">
+            <input type="radio" name="pricing" value="무료" required>
+            무료
+          </label>
+          <label class="option">
+            <input type="radio" name="pricing" value="유료">
+            유료
+          </label>
+        </fieldset>
+
+        <button type="submit" id="submitBtn">제출하기</button>
+        <div id="message"></div>
+      </form>
+    </div>
+
+    <div id="thankyou">
+      <h2>제출 완료!</h2>
+      <p>응답해 주셔서 감사합니다.</p>
+    </div>
+  </div>
+
+  <script>
+    var otherRadio = document.getElementById('aiToolOtherRadio');
+    var otherInput = document.getElementById('aiToolOther');
+    var radios = document.querySelectorAll('input[name="aiTool"]');
+
+    radios.forEach(function (r) {
+      r.addEventListener('change', function () {
+        otherInput.style.display = otherRadio.checked ? 'block' : 'none';
+        if (!otherRadio.checked) otherInput.value = '';
+      });
+    });
+
+    document.getElementById('surveyForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      var aiToolEl = document.querySelector('input[name="aiTool"]:checked');
+      var pricingEl = document.querySelector('input[name="pricing"]:checked');
+      var messageEl = document.getElementById('message');
+      var submitBtn = document.getElementById('submitBtn');
+
+      messageEl.textContent = '';
+      messageEl.className = '';
+
+      if (!aiToolEl || !pricingEl) {
+        messageEl.textContent = '모든 항목에 응답해 주세요.';
+        messageEl.className = 'error';
+        return;
+      }
+
+      if (aiToolEl.value === '기타' && !otherInput.value.trim()) {
+        messageEl.textContent = '기타를 선택한 경우 내용을 입력해 주세요.';
+        messageEl.className = 'error';
+        otherInput.focus();
+        return;
+      }
+
+      var formData = {
+        aiTool: aiToolEl.value,
+        aiToolOther: otherInput.value.trim(),
+        pricing: pricingEl.value
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = '제출 중...';
+
+      google.script.run
+        .withSuccessHandler(function () {
+          document.getElementById('formWrap').style.display = 'none';
+          document.getElementById('thankyou').style.display = 'block';
+        })
+        .withFailureHandler(function (err) {
+          messageEl.textContent = '오류가 발생했습니다: ' + (err && err.message ? err.message : err);
+          messageEl.className = 'error';
+          submitBtn.disabled = false;
+          submitBtn.textContent = '제출하기';
+        })
+        .submitSurvey(formData);
+    });
+  </script>
+</body>
+</html>
