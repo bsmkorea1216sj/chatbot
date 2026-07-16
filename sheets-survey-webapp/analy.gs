@@ -4,8 +4,8 @@
  * 같은 시트의 오른쪽 영역(F열~)에 요약 표와
  * AI별 원차트, 무료/유료 사용유형 원차트를 생성합니다.
  *
- * AI별 표/차트와 사용유형 표/차트를 좌우로 분리 배치하여
- * (F~G열 vs I~J열) 두 차트가 겹쳐서 안 보이는 문제를 방지합니다.
+ * AI별 표/차트와 사용유형 표/차트를 좌우로 충분히 간격을 두고 배치하여
+ * (F~G열 vs Q~R열) 두 차트가 겹쳐서 안 보이는 문제를 방지합니다.
  *
  * 사용법: Apps Script 편집기에서 이 파일 저장 후,
  * 스프레드시트를 새로고침하면 상단 메뉴에 "설문 분석"이 생기고
@@ -14,10 +14,11 @@
  */
 
 var RESPONSES_SHEET_NAME = 'Responses';
-var AI_TABLE_COL = 6;       // F열: AI별 표
-var PRICING_TABLE_COL = 9;  // I열: 사용유형 표 (AI 차트와 겹치지 않도록 간격을 둠)
-var CLEAR_START_COL = 6;    // F열부터
-var CLEAR_NUM_COLS = 12;    // F~Q열까지 요약 영역으로 확보 후 초기화
+var AI_TABLE_COL = 6;        // F열: AI별 표
+var PRICING_TABLE_COL = 17;  // Q열: 사용유형 표 (원차트 폭 480px가 기본 열너비 기준 약 5~6열을 차지하므로
+                              // AI 차트(F열 시작)와 절대 겹치지 않도록 충분히 간격을 둠)
+var CLEAR_START_COL = 6;     // F열부터
+var CLEAR_NUM_COLS = 20;     // F~Y열까지 요약 영역으로 확보 후 초기화
 
 function onOpen() {
   SpreadsheetApp.getUi()
@@ -78,7 +79,7 @@ function generateAnalysis() {
     sheet.getRange(2 + i, AI_TABLE_COL + 1).setValue(aiCounts[key]);
   });
 
-  // 무료/유료 집계 표 (I~J열, AI 표와 같은 줄에서 시작하되 열을 분리)
+  // 무료/유료 집계 표 (Q~R열, AI 표와 같은 줄에서 시작하되 열을 충분히 분리)
   sheet.getRange(1, PRICING_TABLE_COL).setValue('사용유형').setFontWeight('bold');
   sheet.getRange(1, PRICING_TABLE_COL + 1).setValue('응답 수').setFontWeight('bold');
   var pricingKeys = Object.keys(pricingCounts);
@@ -104,7 +105,7 @@ function generateAnalysis() {
     sheet.insertChart(aiChart);
   }
 
-  // 무료/유료 사용유형 원차트: I열 표 아래쪽에 배치 (AI 차트와 열이 분리되어 겹치지 않음)
+  // 무료/유료 사용유형 원차트: Q열 표 아래쪽에 배치 (AI 차트와 열이 충분히 분리되어 겹치지 않음)
   if (pricingKeys.length > 0) {
     var pricingChart = sheet.newChart()
       .asPieChart()
@@ -122,5 +123,9 @@ function generateAnalysis() {
   sheet.autoResizeColumns(AI_TABLE_COL, 2);
   sheet.autoResizeColumns(PRICING_TABLE_COL, 2);
 
-  ui.alert('설문 분석 차트가 생성/갱신되었습니다. (Responses 시트 F열 이후 영역 확인)');
+  // 실행 후 자동으로 F1 셀로 화면을 이동시켜, 스크롤 안 해서 못 보는 경우를 방지
+  SpreadsheetApp.setActiveSheet(sheet);
+  sheet.setActiveRange(sheet.getRange(1, AI_TABLE_COL));
+
+  ui.alert('설문 분석 차트가 생성/갱신되었습니다. (Responses 시트 F열로 화면이 이동합니다. 그래도 안 보이면 시트를 오른쪽으로 스크롤해 F~R열 부근을 확인해 주세요.)');
 }
