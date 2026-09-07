@@ -1,0 +1,415 @@
+<title>BSM 웹사이트 구축 검토서</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap">
+<style>
+  :root{
+    --paper:#F1F0EA; --surface:#FBFAF6; --surface-2:#E7E5DC;
+    --ink:#171A1C; --ink-2:#3B4044; --muted:#63676B;
+    --rule:#D6D3C8; --rule-strong:#B8B4A6;
+    --accent:#8C2F39; --accent-soft:#EBDCDB;
+    --signal:#1E6A5B; --signal-soft:#DCE8E2;
+    --warn:#8A5A16; --warn-soft:#F0E5D2;
+    --display:"Gowun Batang","Nanum Myeongjo",Batang,serif;
+    --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#17181A; --surface:#1F2123; --surface-2:#2A2C2E;
+      --ink:#EDEAE2; --ink-2:#C6C2B8; --muted:#93908A;
+      --rule:#33363A; --rule-strong:#4A4E52;
+      --accent:#D08089; --accent-soft:#3A2529;
+      --signal:#6BBFA6; --signal-soft:#1D2E2A;
+      --warn:#D2A45E; --warn-soft:#332A1B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#17181A; --surface:#1F2123; --surface-2:#2A2C2E;
+    --ink:#EDEAE2; --ink-2:#C6C2B8; --muted:#93908A;
+    --rule:#33363A; --rule-strong:#4A4E52;
+    --accent:#D08089; --accent-soft:#3A2529;
+    --signal:#6BBFA6; --signal-soft:#1D2E2A;
+    --warn:#D2A45E; --warn-soft:#332A1B;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);
+    font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+
+  .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+  .topbar-in{max-width:1080px;margin:0 auto;padding:10px 28px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .brand{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .topbar .ask{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .topbar .ask b{color:var(--ink);font-weight:600}
+
+  header.masthead{padding:56px 0 32px;border-bottom:2px solid var(--ink)}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .eyebrow span.dot{width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,5.4vw,56px);line-height:1.14;
+    letter-spacing:-.01em;margin:0 0 18px;text-wrap:balance}
+  .deck{font-size:clamp(16.5px,2.1vw,19px);line-height:1.62;color:var(--ink-2);max-width:64ch;margin:0;font-weight:300}
+  .deck em{font-style:normal;color:var(--accent);font-weight:500}
+
+  .alert{margin:30px 0 0;background:var(--warn-soft);border-left:3px solid var(--warn);padding:18px 22px}
+  .alert b{color:var(--ink)}
+  .alert .t{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);font-weight:600;margin-bottom:6px}
+  .alert p{margin:0;font-size:14.5px;line-height:1.68;color:var(--ink-2);max-width:none}
+
+  section{padding:52px 0 8px;border-bottom:1px solid var(--rule)}
+  section:last-of-type{border-bottom:none}
+  .sechead{display:flex;gap:18px;align-items:flex-start;margin-bottom:26px}
+  .secnum{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.08em;padding-top:9px;min-width:34px}
+  h2{font-family:var(--display);font-weight:700;font-size:clamp(25px,3.4vw,34px);line-height:1.25;margin:0;text-wrap:balance}
+  .sechead p{margin:6px 0 0;color:var(--muted);font-size:14.5px;line-height:1.6;max-width:66ch}
+  h3{font-family:var(--body);font-weight:600;font-size:16.5px;margin:34px 0 12px;color:var(--ink)}
+  h3::before{content:"";display:inline-block;width:14px;height:2px;background:var(--accent);vertical-align:middle;margin-right:9px;transform:translateY(-3px)}
+  p{margin:0 0 15px;max-width:70ch}
+  a{color:var(--accent);text-underline-offset:3px}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  strong{font-weight:600}
+  code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);padding:1px 5px;border-radius:2px;word-break:break-all}
+
+  .note{background:var(--surface);border-left:3px solid var(--accent);padding:18px 22px;margin:24px 0;
+    font-size:14.5px;line-height:1.68;color:var(--ink-2)}
+  .note b{color:var(--ink)}
+  .pull{font-family:var(--display);font-size:clamp(19px,2.6vw,25px);line-height:1.45;color:var(--ink);
+    margin:30px 0;padding-left:22px;border-left:2px solid var(--accent);max-width:54ch}
+
+  .tablewrap{overflow-x:auto;margin:20px 0 26px;border:1px solid var(--rule);background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:14px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.55}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:11px;font-weight:600;
+    letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13px;white-space:nowrap}
+  tr.total td{background:var(--surface-2);font-weight:600}
+
+  .v{display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:600;letter-spacing:.06em;
+    padding:2px 8px;white-space:nowrap;border:1px solid}
+  .v-no{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+  .v-warn{color:var(--warn);border-color:var(--warn);background:var(--warn-soft)}
+  .v-ok{color:var(--signal);border-color:var(--signal);background:var(--signal-soft)}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1px;background:var(--rule);
+    border:1px solid var(--rule);margin:22px 0 28px}
+  .tile{background:var(--surface);padding:18px 20px}
+  .tile .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .tile .v2{font-size:25px;font-weight:600;line-height:1.15;letter-spacing:-.01em}
+  .tile .v2.accent{color:var(--accent)}
+  .tile .s{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+  ul.clean{list-style:none;padding:0;margin:16px 0 22px;display:grid;gap:13px}
+  ul.clean li{padding-left:20px;position:relative;font-size:15px;line-height:1.65;max-width:74ch}
+  ul.clean li::before{content:"";position:absolute;left:0;top:11px;width:7px;height:1.5px;background:var(--rule-strong)}
+
+  .arch{display:grid;gap:9px;margin:22px 0 10px;font-size:13.5px}
+  .layer{display:grid;grid-template-columns:112px 1fr;gap:14px}
+  .layer .lname{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--muted);padding-top:13px;text-align:right}
+  .layer .lbody{background:var(--surface);border:1px solid var(--rule);padding:12px 16px;line-height:1.6}
+  .layer .lbody b{font-weight:600}
+  .layer.split .lbody{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0;border:none;background:none}
+  .tier{background:var(--surface);border:1px solid var(--rule);padding:12px 16px}
+  .tier.a{border-left:3px solid var(--accent)}
+  .tier.b{border-left:3px solid var(--signal)}
+  .tier .tname{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+  .tier.a .tname{color:var(--accent)} .tier.b .tname{color:var(--signal)}
+  .arrow{text-align:center;color:var(--rule-strong);font-family:var(--mono);font-size:13px;line-height:1;margin:-3px 0}
+
+  .funnel{display:grid;gap:8px;margin:22px 0}
+  .fstep{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+    border:1px solid var(--rule-strong);background:var(--surface);padding:12px 16px}
+  .fstep .lbl{font-size:14.5px}
+  .fstep .lbl b{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:3px}
+  .fstep .kpi{font-family:var(--mono);font-size:13.5px;font-weight:600;white-space:nowrap;color:var(--ink-2)}
+  .fstep.s2{margin-left:4%} .fstep.s3{margin-left:8%} .fstep.s4{margin-left:12%}
+  .fstep.s5{margin-left:16%;background:var(--accent-soft);border-color:var(--accent)}
+  .fstep.s5 .kpi{color:var(--accent)}
+
+  .phases{display:grid;gap:0;margin:22px 0 26px;border-left:2px solid var(--rule)}
+  .phase{padding:0 0 24px 26px;position:relative}
+  .phase:last-child{padding-bottom:6px}
+  .phase::before{content:"";position:absolute;left:-6px;top:7px;width:10px;height:10px;border-radius:50%;
+    background:var(--paper);border:2px solid var(--rule-strong)}
+  .phase.now::before{background:var(--accent);border-color:var(--accent)}
+  .phase .pmeta{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .phase h4{margin:0 0 8px;font-size:16px;font-weight:600;font-family:var(--body)}
+  .phase p{margin:0;font-size:14.5px;color:var(--ink-2)}
+
+  .sources{columns:2;column-gap:36px;font-size:13.5px;line-height:1.7}
+  .sources li{break-inside:avoid;margin-bottom:9px}
+  footer{padding:40px 0 0;color:var(--muted);font-size:12.5px;line-height:1.7;border-top:1px solid var(--rule);margin-top:44px}
+
+  @media (max-width:720px){
+    .wrap{padding:0 18px 72px}.topbar-in{padding:9px 18px}
+    .layer{grid-template-columns:1fr;gap:5px}
+    .layer .lname{text-align:left;padding-top:0}
+    .layer.split .lbody{grid-template-columns:1fr}
+    .sources{columns:1}
+    .fstep.s2,.fstep.s3,.fstep.s4,.fstep.s5{margin-left:0}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="topbar"><div class="topbar-in">
+  <span class="brand">BSM · Web Platform</span>
+  <span class="ask">GCP 웹사이트 · 유튜브/블로그 연동 · <b>검토 보고서</b></span>
+</div></div>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow"><span class="dot"></span> 기술 검토 보고서 <span class="dot"></span> 2026.09.07 <span class="dot"></span> v1.0</p>
+  <h1>콘텐츠를 마케팅과 제품에<br>동시에 쓰는 사이트</h1>
+  <p class="deck">GCP 기반 웹사이트 구축안과, 유튜브·티스토리를 <em>유입 채널이자 챗봇 학습 데이터</em>로 동시에 활용하는 연동 설계를 검토했습니다. 계획서에 흔히 들어가는 전제 12개를 사실 대조했고, <em>그중 4개는 지금은 성립하지 않습니다.</em></p>
+
+  <div class="alert">
+    <div class="t">먼저 확인해 주세요</div>
+    <p><b>공유해 주신 ChatGPT 대화(<code>chatgpt.com/share/6a9ec0d1…</code>)를 열지 못했습니다.</b> 이 세션의 네트워크 정책이 <code>chatgpt.com</code> 접근을 차단합니다 — 앞서 티스토리·유튜브·카페24 사이트가 막힌 것과 같은 이유입니다. 따라서 <b>그 대화의 내용을 직접 검증한 것이 아닙니다.</b> 대신 이런 계획에 반복적으로 등장하는 전제들을 공개 출처로 사실 대조해 §1에 정리했으니, 대화 원문을 이 창에 붙여넣어 주시면 문장 단위로 대조해 드리겠습니다.</p>
+  </div>
+</header>
+
+<section>
+  <div class="sechead"><div class="secnum">01</div><div>
+    <h2>사실 대조 — 계획서 전제 12개</h2>
+    <p>GCP 웹사이트 + 유튜브/블로그 연동 계획에 자주 등장하는 전제를 2026년 9월 기준 공식 문서·공지와 대조했습니다.</p>
+  </div></div>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>흔한 전제</th><th class="n">판정</th><th>실제</th></tr></thead>
+    <tbody>
+      <tr><td><strong>티스토리 Open API로 글을 자동 수집·발행한다</strong></td><td class="n"><span class="v v-no">거짓</span></td>
+        <td>티스토리 Open API는 <strong>2024년 2월까지 순차 종료</strong>(파일첨부 → 글 → 댓글 → 기타)되었고 유지보수도 중단됐습니다. 지금 남은 공식 수단은 <strong>RSS</strong>(<code>https://netk.tistory.com/rss</code>)와 사이트맵뿐입니다.</td></tr>
+      <tr><td>유튜브 최신 영상을 <code>search.list</code>로 주기적으로 가져온다</td><td class="n"><span class="v v-warn">위험</span></td>
+        <td><code>search.list</code>는 <strong>호출당 100 units</strong>, 일일 기본 할당량은 10,000 units입니다. 즉 <strong>하루 100회</strong>가 상한이며 10분 주기로 돌리면 첫날 초과됩니다. 아래 §3의 1-unit 경로로 바꿔야 합니다.</td></tr>
+      <tr><td>유튜브 API 할당량은 돈을 내면 늘릴 수 있다</td><td class="n"><span class="v v-no">거짓</span></td>
+        <td><strong>유료 등급이 없습니다.</strong> Google Cloud Console의 감사(audit) 신청서를 제출해 심사를 받는 방법뿐이며, 승인은 보장되지 않습니다.</td></tr>
+      <tr><td>GCP 무료 등급으로 사실상 0원 운영이 가능하다</td><td class="n"><span class="v v-warn">부분</span></td>
+        <td>Cloud Run의 월 무료 한도(vCPU·메모리·요청)는 실재합니다. 그러나 <strong>Always Free의 e2-micro VM·Cloud Storage는 미국 리전(us-central1 등) 한정</strong>이라 서울 리전(<code>asia-northeast3</code>)에 만들면 첫 달부터 과금됩니다. “무료”를 리전 무관으로 읽으면 예산이 어긋납니다.</td></tr>
+      <tr><td>블로그 글을 사이트에 그대로 재게시해 SEO를 키운다</td><td class="n"><span class="v v-no">역효과</span></td>
+        <td>동일 본문이 두 도메인에 존재하면 <strong>중복 콘텐츠</strong>로 서로의 순위를 갉아먹습니다. 재게시하려면 <code>rel="canonical"</code>로 원문을 지정하거나, 사이트에는 <strong>요약 + 원문 링크</strong>만 두는 방식이어야 합니다.</td></tr>
+      <tr><td>유튜브 영상을 임베드하면 사이트 체류시간이 올라 SEO에 좋다</td><td class="n"><span class="v v-warn">조건부</span></td>
+        <td>임베드 자체는 랭킹 신호가 아닙니다. 효과를 내려면 <strong><code>VideoObject</code> 구조화 데이터</strong>와 텍스트 요약(자막 기반)을 함께 넣어야 검색결과에 동영상으로 노출됩니다. 무거운 iframe은 오히려 LCP를 악화시키므로 <strong>지연 로드(파사드) 처리</strong>가 필요합니다.</td></tr>
+      <tr><td>Firebase Hosting과 Cloud Run 중 하나만 고르면 된다</td><td class="n"><span class="v v-warn">부분</span></td>
+        <td>둘은 경쟁 관계가 아닙니다. <strong>정적 자산·CDN은 Firebase Hosting, API·챗봇은 Cloud Run</strong>으로 나누는 것이 원가·지연·운영 모두에서 유리합니다. §2 구성 참고.</td></tr>
+      <tr><td>GA4만 붙이면 채널별 성과를 알 수 있다</td><td class="n"><span class="v v-warn">부분</span></td>
+        <td>UTM 규칙이 없으면 유튜브 유입이 전부 <code>youtube.com / referral</code> 한 덩어리로 묶여 <strong>어느 영상이 성과를 냈는지 알 수 없습니다.</strong> §4의 UTM 표준을 먼저 고정해야 합니다.</td></tr>
+      <tr><td>챗봇은 사이트 완성 후 마지막에 붙인다</td><td class="n"><span class="v v-no">순서 오류</span></td>
+        <td>BSM은 챗봇이 <strong>제품</strong>입니다. 사이트의 챗봇은 부가기능이 아니라 <strong>라이브 데모</strong>이므로, 콘텐츠 파이프라인(§3)과 함께 초기에 설계해야 “블로그 400편을 학습한 봇”이라는 증명이 성립합니다.</td></tr>
+      <tr><td>티스토리는 앞으로도 안정적인 콘텐츠 자산이다</td><td class="n"><span class="v v-warn">의존 위험</span></td>
+        <td>서비스 종료가 <strong>공식 발표된 바는 없습니다</strong>(업계 추측성 논의는 존재). 다만 Open API 종료가 보여주듯 <strong>플랫폼 정책에 자산이 종속</strong>돼 있습니다. 자체 도메인으로 아카이브를 복제해 두는 것이 안전합니다.</td></tr>
+      <tr><td>서울 리전에 두면 무조건 빠르다</td><td class="n"><span class="v v-ok">대체로 사실</span></td>
+        <td>국내 이용자 대상이면 <code>asia-northeast3</code>가 맞습니다. 다만 정적 자산은 어차피 CDN 엣지에서 나가므로, 리전 선택이 실제로 좌우하는 것은 <strong>API·챗봇 응답 지연</strong>입니다.</td></tr>
+      <tr><td>사이트에 사업자 정보·개인정보처리방침은 나중에 넣어도 된다</td><td class="n"><span class="v v-no">위법 소지</span></td>
+        <td>전자상거래법상 <strong>상호·대표자·주소·사업자등록번호·통신판매업 신고번호·연락처</strong> 표시는 의무입니다. 여기에 개인정보처리방침, 이메일무단수집거부, 그리고 <strong>AI 기본법에 따른 생성형 AI 고지</strong>가 챗봇 화면에 필요합니다.</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>요약</b> — 12개 중 <b>4개는 지금 성립하지 않고</b>(티스토리 API, 유튜브 유료 할당량, 중복 재게시, 법적 표기 후순위), <b>5개는 조건부</b>입니다. 특히 티스토리 API를 전제로 짠 연동 설계가 있다면 <b>전면 재설계 대상</b>입니다.</div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">02</div><div>
+    <h2>GCP 웹사이트 구성안</h2>
+    <p>마케팅 사이트 · 챗봇 데모 · 파트너 포털을 한 프로젝트에 담되, 정적·동적 경로를 분리해 원가와 지연을 동시에 잡는 구성입니다.</p>
+  </div></div>
+
+  <div class="arch">
+    <div class="layer"><div class="lname">도메인 · 엣지</div><div class="lbody"><b>Cloud DNS</b> + <b>Firebase Hosting</b> (무료 SSL · 글로벌 CDN · 자동 압축) → 정적 페이지·이미지·JS 전량<br><b>Cloud Armor</b>로 봇·과다요청 차단, WAF 룰 적용</div></div>
+    <div class="arrow">↓</div>
+    <div class="layer split"><div class="lname">애플리케이션</div><div class="lbody">
+      <div class="tier a"><div class="tname">정적 경로</div><b>Next.js SSG / ISR</b><br>회사소개·요금·블로그 허브·영상 허브. 빌드 시 생성 → CDN에서 직접 응답. 서버 비용 0에 수렴.</div>
+      <div class="tier b"><div class="tname">동적 경로</div><b>Cloud Run</b> (<code>asia-northeast3</code>)<br>챗봇 API·상담 신청·파트너 포털·관리자. 요청 없을 때 인스턴스 0 → 유휴 비용 없음.</div>
+    </div></div>
+    <div class="arrow">↓</div>
+    <div class="layer"><div class="lname">콘텐츠 수집</div><div class="lbody"><b>Cloud Scheduler</b>(1시간 주기) → <b>Cloud Run Job</b> → 유튜브 RSS·Data API + 티스토리 RSS 파싱 → 정규화 → 저장. 실패 시 <b>Pub/Sub</b> 재시도.</div></div>
+    <div class="arrow">↓</div>
+    <div class="layer"><div class="lname">데이터</div><div class="lbody"><b>Firestore</b> — 콘텐츠 캐시·세션·상담 신청 (읽기 지연 낮음)<br><b>BigQuery</b> — 챗봇 대화 로그·GA4 Export·콘텐츠 성과 (분석 및 RAG Cold 티어 겸용)<br><b>Cloud Storage</b> — 원본 문서·썸네일·자막 파일</div></div>
+    <div class="arrow">↓</div>
+    <div class="layer"><div class="lname">챗봇</div><div class="lbody">기존 <b>하이브리드 RAG 엔진</b> 재사용 — 사이트 챗봇은 별도 제품이 아니라 <b>테넌트 #1</b>. 코퍼스 = 블로그 본문 + 유튜브 자막 + 요금·FAQ 페이지.</div></div>
+    <div class="arrow">↓</div>
+    <div class="layer"><div class="lname">운영</div><div class="lbody"><b>Cloud Build</b> + <b>Artifact Registry</b> (GitHub 푸시 → 자동 배포) · <b>Secret Manager</b>(API 키) · <b>Cloud Logging/Monitoring</b> + 예산 알림</div></div>
+  </div>
+
+  <h3>월 운영원가 추정</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>항목</th><th class="n">A · 월 1만 PV</th><th class="n">B · 월 5만 PV</th><th class="n">C · 월 20만 PV</th></tr></thead>
+    <tbody>
+      <tr><td>Firebase Hosting (전송·스토리지)</td><td class="n">무료~$2</td><td class="n">$5</td><td class="n">$18</td></tr>
+      <tr><td>Cloud Run (API·챗봇 백엔드)</td><td class="n">무료</td><td class="n">$8</td><td class="n">$35</td></tr>
+      <tr><td>Firestore</td><td class="n">무료</td><td class="n">$2</td><td class="n">$9</td></tr>
+      <tr><td>BigQuery (로그·분석)</td><td class="n">무료</td><td class="n">$1</td><td class="n">$6</td></tr>
+      <tr><td>Scheduler · Functions · Pub/Sub</td><td class="n">무료</td><td class="n">무료</td><td class="n">$1</td></tr>
+      <tr><td>Secret Manager · Logging · 기타</td><td class="n">$1</td><td class="n">$3</td><td class="n">$10</td></tr>
+      <tr class="total"><td>인프라 소계</td><td class="n">$1~5</td><td class="n">$19</td><td class="n">$79</td></tr>
+      <tr><td>챗봇 LLM · 임베딩 (세션 기준)</td><td class="n">1천 세션 $12</td><td class="n">5천 세션 $55</td><td class="n">2만 세션 $210</td></tr>
+      <tr class="total"><td>합계 (원화 · 1,350원 환산)</td><td class="n">약 2.3만 원</td><td class="n">약 10만 원</td><td class="n">약 39만 원</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:13px;color:var(--muted)">공식 단가와 무료 한도를 기준으로 한 추정치입니다. 계약 전 <a href="https://cloud.google.com/products/calculator">Google Cloud 가격 계산기</a>로 재확인하고, <strong>예산 알림(Budget Alert)을 프로젝트 생성 즉시</strong> 설정하십시오. 실수로 켠 리소스 하나가 월 원가를 몇 배로 만드는 사고가 가장 흔합니다.</p>
+
+  <div class="note"><b>법적 표기 체크리스트</b> — 푸터에 상호·대표자·주소·사업자등록번호·통신판매업 신고번호·연락처, 별도 페이지로 이용약관·개인정보처리방침, 그리고 챗봇 첫 화면에 <b>“AI가 생성한 답변”</b> 고지와 상담사 연결 경로. 쇼핑몰(카페24)과 도메인이 다르면 각각 표기가 필요합니다.</div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">03</div><div>
+    <h2>유튜브 · 블로그 연동 설계</h2>
+    <p>연동을 세 층으로 분리합니다. 보여주기(표시), 가져오기(수집), 데려오기(유입). 층마다 쓰는 기술과 실패 지점이 다릅니다.</p>
+  </div></div>
+
+  <h3>1층 · 표시 — 사이트에 무엇을 띄우는가</h3>
+  <ul class="clean">
+    <li><strong>영상 허브</strong> — 최신 영상 카드 그리드. iframe은 <strong>파사드 방식</strong>(썸네일 이미지 + 클릭 시 로드)으로 처리해 LCP를 지킵니다. 페이지당 iframe 즉시 로드는 1개 이하.</li>
+    <li><strong>블로그 허브</strong> — 티스토리 원문으로 보내는 <strong>요약 카드</strong>. 본문 전체를 복사하지 않습니다(중복 콘텐츠). 부득이 전문을 실을 경우 <code>&lt;link rel="canonical" href="원문 URL"&gt;</code> 필수.</li>
+    <li><strong>구조화 데이터</strong> — 영상에는 <code>VideoObject</code>(제목·설명·썸네일·업로드일·재생시간), FAQ 페이지에는 <code>FAQPage</code>, 회사 정보에는 <code>Organization</code>. 검색결과 리치 스니펫의 전제 조건입니다.</li>
+  </ul>
+
+  <h3>2층 · 수집 — 어떻게 가져오는가 (할당량이 갈리는 지점)</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>방식</th><th class="n">비용(units)</th><th>얻는 것</th><th>판단</th></tr></thead>
+    <tbody>
+      <tr><td><strong>유튜브 RSS</strong><br><code>youtube.com/feeds/videos.xml?channel_id=UC56jdn5srhpuR4KQKnzO0iw</code></td><td class="n">0</td><td>최신 15편의 제목·링크·게시일·썸네일</td><td><span class="v v-ok">1순위</span> 할당량 0. 신규 영상 감지는 이것으로 충분</td></tr>
+      <tr><td><code>channels.list</code> → <code>playlistItems.list</code> → <code>videos.list</code></td><td class="n">3</td><td>전체 업로드 목록 + 조회수·좋아요·재생시간</td><td><span class="v v-ok">2순위</span> 통계가 필요할 때. 1시간 주기 = 하루 72 units</td></tr>
+      <tr><td><code>search.list</code> 주기 호출</td><td class="n">100</td><td>위와 사실상 동일</td><td><span class="v v-no">금지</span> 10분 주기 시 하루 14,400 units — 할당량의 1.4배</td></tr>
+      <tr><td><strong>티스토리 RSS</strong> <code>netk.tistory.com/rss</code></td><td class="n">0</td><td>최근 글 제목·링크·게시일·본문(설정에 따라 요약/전문)</td><td><span class="v v-ok">유일한 수단</span> Open API 종료로 대안 없음</td></tr>
+      <tr><td>티스토리 Open API</td><td class="n">—</td><td>—</td><td><span class="v v-no">불가</span> 2024년 2월 종료</td></tr>
+      <tr><td>유튜브 자막 (챗봇 코퍼스용)</td><td class="n">별도</td><td>영상 본문 텍스트</td><td><span class="v v-warn">주의</span> 채널 소유자 OAuth로 <code>captions</code> API 사용. 제3자 스크래핑은 약관 위반</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>수집 설계 원칙</b> — ① 신규 감지는 <b>RSS</b>, 통계 보강은 <b>1-unit API</b>, <code>search.list</code>는 쓰지 않는다. ② 결과는 <b>Firestore에 캐시</b>하고 사용자 요청마다 API를 부르지 않는다(할당량은 사용자 수가 아니라 <b>호출 수</b>로 소진됩니다). ③ 할당량은 <b>태평양시 자정</b>에 초기화되므로 배치는 한국시간 오후에 배치해 여유를 둔다.</div>
+
+  <h3>3층 · 유입 — 어떻게 데려오는가</h3>
+  <ul class="clean">
+    <li><strong>영상 설명란 첫 줄</strong>에 UTM 링크. 유튜브 설명란은 3줄까지만 접히지 않으므로 링크는 반드시 최상단에.</li>
+    <li><strong>고정 댓글</strong>과 <strong>카드/최종화면</strong>에 동일 링크(다른 <code>utm_content</code>)를 걸어 어느 위치가 클릭을 만드는지 분리 측정.</li>
+    <li><strong>블로그 본문 하단 배너</strong> — 글 주제별로 랜딩을 다르게. “네트워크 장비 설정” 글은 IT 도메인 팩 페이지로, “쇼핑몰 CS” 글은 커머스 팩 페이지로.</li>
+    <li><strong>역방향 유입</strong> — 사이트 챗봇이 답변 근거로 블로그·영상을 인용하며 링크를 노출. 사이트 방문자가 다시 콘텐츠 채널로 흐릅니다.</li>
+  </ul>
+
+  <p class="pull">콘텐츠를 세 번 씁니다. 유입 자산으로, 챗봇 학습 데이터로, 그리고 다음 콘텐츠 주제를 알려주는 질문 로그로.</p>
+
+  <h3>선순환 구조 — 이 설계의 핵심</h3>
+  <ul class="clean">
+    <li><strong>콘텐츠 → 제품</strong> — 블로그 본문과 영상 자막이 챗봇 코퍼스가 됩니다. 사이트 챗봇은 “우리 블로그 전편을 학습한 봇”이라는 <strong>살아있는 데모</strong>가 되고, 잠재 고객은 성능을 설명이 아니라 경험으로 확인합니다.</li>
+    <li><strong>제품 → 콘텐츠</strong> — 챗봇이 <strong>답을 못 찾은 질문 로그</strong>가 곧 콘텐츠 공백입니다. 이 목록이 다음 달 블로그·영상 주제가 됩니다. 키워드 도구보다 정확한, 실제 수요가 확인된 주제입니다.</li>
+    <li><strong>제품 → 영업</strong> — 대화 로그에서 업종·문의 유형이 드러나므로, 파트너에게 넘길 <strong>리드의 질</strong>이 올라갑니다.</li>
+  </ul>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">04</div><div>
+    <h2>마케팅 효율 측정 체계</h2>
+    <p>“효율화”는 측정 가능한 퍼널을 만든 다음에야 시작됩니다. 먼저 UTM 규칙을 고정하십시오.</p>
+  </div></div>
+
+  <h3>UTM 표준 (이 표를 그대로 사용)</h3>
+  <div class="tablewrap"><table>
+    <thead><tr><th>파라미터</th><th>값 규칙</th><th>예시</th></tr></thead>
+    <tbody>
+      <tr><td><code>utm_source</code></td><td>채널 고정값 — <code>youtube</code> / <code>tistory</code> / <code>naver</code> / <code>google</code> / <code>kakao</code></td><td><code>youtube</code></td></tr>
+      <tr><td><code>utm_medium</code></td><td>게재 위치 — <code>video_desc</code> / <code>video_pinned</code> / <code>video_endcard</code> / <code>blog_body</code> / <code>blog_banner</code> / <code>cpc</code></td><td><code>video_desc</code></td></tr>
+      <tr><td><code>utm_campaign</code></td><td><code>{yyyymm}_{주제}</code> — 월 단위로 묶어 기간 비교가 가능하게</td><td><code>202610_rag_chatbot</code></td></tr>
+      <tr><td><code>utm_content</code></td><td>개별 콘텐츠 식별자 — 영상 ID 또는 포스트 slug</td><td><code>dQw4w9WgXcQ</code></td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:13.5px;color:var(--ink-2)">이 규칙 없이는 GA4에서 유튜브 유입이 <code>youtube.com / referral</code> 한 줄로 뭉쳐 <strong>어느 영상이 매출을 만들었는지 영원히 알 수 없습니다.</strong> 규칙은 스프레드시트 한 장으로 관리하고, 링크 생성기를 만들어 오타를 원천 차단하십시오.</p>
+
+  <h3>퍼널과 목표 지표</h3>
+  <div class="funnel">
+    <div class="fstep"><div class="lbl"><b>1 · 노출</b>유튜브 노출수 + 블로그 검색 노출수</div><div class="kpi">월 10만 → 30만</div></div>
+    <div class="fstep s2"><div class="lbl"><b>2 · 유입</b>UTM 링크 클릭 → 사이트 세션</div><div class="kpi">CTR 2% · 월 2,000 세션</div></div>
+    <div class="fstep s3"><div class="lbl"><b>3 · 대화</b>챗봇 대화 시작 (핵심 참여 지표)</div><div class="kpi">세션의 25% · 500건</div></div>
+    <div class="fstep s4"><div class="lbl"><b>4 · 리드</b>연락처 입력 · 견적 요청 · 데모 신청</div><div class="kpi">대화의 8% · 40건</div></div>
+    <div class="fstep s5"><div class="lbl"><b>5 · 계약</b>파트너 배정 후 유료 전환</div><div class="kpi">리드의 15% · 월 6건</div></div>
+  </div>
+  <p style="font-size:13px;color:var(--muted)">위 수치는 초기 목표 가설입니다. 3개월 실측 후 각 단계 전환율을 실제값으로 대체하고, <strong>가장 낮은 전환율 구간 한 곳만</strong> 개선 대상으로 삼으십시오. 전 구간 동시 개선은 원인을 분리하지 못합니다.</p>
+
+  <h3>측정 도구 구성</h3>
+  <div class="tiles">
+    <div class="tile"><div class="k">수집</div><div class="v2">GA4 + GTM</div><div class="s">이벤트: 챗봇 열기 · 첫 질문 · 근거 링크 클릭 · 리드 제출</div></div>
+    <div class="tile"><div class="k">저장</div><div class="v2 accent">BigQuery Export</div><div class="s">GA4 원본 이벤트 + 챗봇 대화 로그를 한 곳에서 조인</div></div>
+    <div class="tile"><div class="k">검색</div><div class="v2">Search Console</div><div class="s">쿼리별 노출·CTR. 네이버 서치어드바이저·다음도 함께 등록</div></div>
+    <div class="tile"><div class="k">영상</div><div class="v2">YouTube Analytics</div><div class="s">채널 소유자 OAuth. 시청 지속시간과 유입 링크 클릭 대조</div></div>
+    <div class="tile"><div class="k">보고</div><div class="v2">Looker Studio</div><div class="s">주간 1페이지: 채널별 유입 → 대화 → 리드 → 계약</div></div>
+  </div>
+
+  <div class="note"><b>가장 값진 조인</b> — GA4 이벤트와 챗봇 대화 로그를 BigQuery에서 <code>session_id</code>로 이으면, <b>“어느 영상에서 들어온 사람이 무엇을 물었고 계약했는가”</b>를 한 줄 쿼리로 볼 수 있습니다. 이 질문에 답할 수 있는 경쟁사는 국내에 거의 없습니다.</div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">05</div><div>
+    <h2>리스크</h2>
+  </div></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>리스크</th><th class="n">영향</th><th>대응</th></tr></thead>
+    <tbody>
+      <tr><td><strong>티스토리 플랫폼 종속</strong> — Open API가 이미 사라졌고 정책이 다시 바뀔 수 있음</td><td class="n">상</td><td>RSS로 <strong>전 포스트를 자체 스토리지에 아카이브</strong>하고, 중장기적으로 자체 도메인 블로그로 이관. 콘텐츠는 자산이지 플랫폼의 것이 아닙니다</td></tr>
+      <tr><td>유튜브 API 할당량 초과</td><td class="n">중</td><td>RSS 우선 + 1-unit 경로 + Firestore 캐시. 초과 시 캐시된 데이터로 <strong>정상 렌더링</strong>되도록 폴백 설계</td></tr>
+      <tr><td><strong>중복 콘텐츠로 인한 검색 순위 하락</strong></td><td class="n">상</td><td>사이트에는 요약만. 전문 게재 시 <code>canonical</code> 필수. 배포 전 Search Console <strong>색인 상태 점검</strong></td></tr>
+      <tr><td>GCP 비용 폭주</td><td class="n">중</td><td>예산 알림 + 결제 한도 + Cloud Run 최대 인스턴스 상한. 로그 보존기간 30일 제한(로깅 비용이 조용히 커집니다)</td></tr>
+      <tr><td><strong>챗봇 데모의 오답</strong> — 사이트 챗봇은 곧 제품 시연</td><td class="n">상</td><td>사이트 봇에 <strong>가장 엄격한 임계값</strong> 적용. 근거 없으면 답하지 않고 상담 연결. 데모에서의 오답 1건이 계약을 날립니다</td></tr>
+      <tr><td>개인정보 수집 동의 누락</td><td class="n">중</td><td>리드 폼과 챗봇 대화 저장 각각에 <strong>수집·이용 동의</strong> 분리 표기. 대화 로그의 PII 마스킹 파이프라인 적용</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">06</div><div>
+    <h2>12주 실행 계획</h2>
+    <p>각 구간이 끝날 때 확인 가능한 산출물을 기준으로 끊었습니다.</p>
+  </div></div>
+  <div class="phases">
+    <div class="phase now"><div class="pmeta">1–2주</div><h4>기반</h4>
+      <p>도메인·GCP 프로젝트·결제 예산 알림 설정. GitHub → Cloud Build 자동 배포 파이프라인. Next.js 정적 골격과 법적 표기(사업자정보·약관·개인정보처리방침) 완비. <strong>산출물: 접속 가능한 사이트와 배포 자동화.</strong></p></div>
+    <div class="phase"><div class="pmeta">3–4주</div><h4>콘텐츠 파이프라인</h4>
+      <p>유튜브 RSS + 1-unit API, 티스토리 RSS 수집 배치. Firestore 캐시. 영상 허브·블로그 허브 페이지와 <code>VideoObject</code>·<code>canonical</code> 처리. <strong>산출물: 새 영상·글이 1시간 내 사이트에 자동 반영.</strong></p></div>
+    <div class="phase"><div class="pmeta">5–6주</div><h4>챗봇 탑재</h4>
+      <p>블로그 본문·영상 자막을 코퍼스로 색인하고 사이트 챗봇 위젯 연결. 근거 인용 UI와 AI 고지. 골든셋 200문항으로 정확도 측정. <strong>산출물: 자사 콘텐츠로 답하는 라이브 데모.</strong></p></div>
+    <div class="phase"><div class="pmeta">7–8주</div><h4>측정 체계</h4>
+      <p>GTM·GA4 이벤트, UTM 표준 적용 및 링크 생성기, BigQuery Export, Looker Studio 주간 대시보드. 구글·네이버·다음 검색 등록과 사이트맵 제출. <strong>산출물: 채널별 유입→대화→리드 단일 화면.</strong></p></div>
+    <div class="phase"><div class="pmeta">9–12주</div><h4>운영과 개선</h4>
+      <p>챗봇 미응답 질문 로그로 콘텐츠 캘린더 작성. 랜딩 A/B. 파트너 포털 v0(구좌 신청·자료실). <strong>산출물: 콘텐츠 → 제품 → 콘텐츠 선순환 1회전 완주.</strong></p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">07</div><div>
+    <h2>다음 단계에서 필요한 것</h2>
+  </div></div>
+  <ul class="clean">
+    <li><strong>ChatGPT 대화 원문</strong> — 이 창에 붙여넣어 주시면 §1의 기준으로 문장 단위 대조 검증을 해 드립니다. 특히 <strong>비용 추정치·기술 스택·일정</strong> 세 항목은 대조 가치가 큽니다.</li>
+    <li><strong>유튜브 채널 실측치</strong> — 구독자·월 조회수·업로드 주기. 퍼널 1단계 “노출” 목표를 가설이 아닌 실제 기저값으로 바꿀 수 있습니다.</li>
+    <li><strong>블로그 실측치</strong> — 누적 포스트 수·월 방문자. 챗봇 코퍼스 규모와 색인 비용이 여기서 결정됩니다.</li>
+    <li><strong>티스토리 RSS 설정 상태</strong> — 전문 발행인지 요약 발행인지. 요약이면 코퍼스 구축 방법이 달라집니다.</li>
+    <li><strong>도메인 보유 여부</strong>와 카페24 쇼핑몰과의 관계(서브도메인 통합 여부).</li>
+  </ul>
+  <div class="note">위 항목이 확정되면 이 검토서를 <b>실행 가능한 기술 명세서</b>로 확장하고, 필요하시면 1–2주 구간의 초기 코드 골격까지 저장소에 올려 드리겠습니다.</div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">08</div><div><h2>참고 출처</h2></div></div>
+  <ul class="sources">
+    <li><a href="https://tistory.github.io/document-tistory-apis/">티스토리 Open API 서비스 종료 안내 — 티스토리 공식</a></li>
+    <li><a href="https://github.com/tistory/document-tistory-apis">티스토리 Open API 가이드 (종료 공지) — GitHub</a></li>
+    <li><a href="https://developers.google.com/youtube/v3/determine_quota_cost">YouTube Data API 할당량 비용 — Google 공식</a></li>
+    <li><a href="https://www.getphyllo.com/post/youtube-api-limits-how-to-calculate-api-usage-cost-and-fix-exceeded-api-quota">YouTube API Quota Limits 2026 — Phyllo</a></li>
+    <li><a href="https://outlierkit.com/resources/youtube-api-quota/">YouTube API Quota Explained (2026) — OutlierKit</a></li>
+    <li><a href="https://cloud.google.com/run/pricing">Cloud Run 가격 — Google Cloud</a></li>
+    <li><a href="https://firebase.google.com/docs/app-hosting/costs?hl=ko">Firebase App Hosting 비용 — Firebase 공식</a></li>
+    <li><a href="https://cloud.google.com/free/docs/free-cloud-features">Google Cloud 무료 등급 조건 — Google Cloud</a></li>
+    <li><a href="https://cloud.google.com/products/calculator">Google Cloud 가격 계산기</a></li>
+    <li><a href="https://developers.google.com/search/docs/appearance/structured-data/video">VideoObject 구조화 데이터 — Google 검색 센터</a></li>
+  </ul>
+</section>
+
+<footer>
+  <p>본 검토서는 공개 문서와 명시된 가정에 기반합니다. 공유된 ChatGPT 대화 원문은 네트워크 정책상 열람하지 못했으며, §1은 해당 대화의 검증이 아니라 <strong>동일 유형 계획에 대한 일반 사실 대조</strong>입니다. 비용 수치는 추정치이므로 계약 전 공식 계산기로 재확인이 필요합니다.</p>
+  <p>BSM · GCP 웹사이트 및 콘텐츠 연동 검토서 v1.0 · 2026.09.07</p>
+</footer>
+
+</div>
