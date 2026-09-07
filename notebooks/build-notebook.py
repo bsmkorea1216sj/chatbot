@@ -88,6 +88,11 @@ DATASET      = "bsm_ai"
 SERVICE_NAME = "bsm-api"                    # Cloud Run 서비스 이름
 SITE_DOMAIN  = "https://www.bsm-ai.com"     # 홈페이지 주소 (없으면 *.web.app 주소)
 CAFE24_URL   = "https://bsmshop.cafe24.com" # 결제 스토어
+BRAND        = "AI노마드챗봇"                # 서비스 브랜드명
+
+# Firebase Authentication (이메일 인증 회원가입). 콘솔 > 프로젝트 설정 > 웹 앱에서 확인합니다.
+FIREBASE_API_KEY     = ""                                    # ← 웹 API 키 붙여넣기
+FIREBASE_AUTH_DOMAIN = f"{PROJECT_ID}.firebaseapp.com"
 # ──────────────────────────────────────────────────────────────────
 
 # 모델. Gemini 2.5 계열은 2026-10-16 종료 예정이므로 3.x 계열을 사용합니다.
@@ -168,6 +173,7 @@ code(r"""
   aiplatform.googleapis.com \
   bigquery.googleapis.com \
   firestore.googleapis.com \
+  identitytoolkit.googleapis.com \
   run.googleapis.com \
   cloudbuild.googleapis.com \
   artifactregistry.googleapis.com \
@@ -364,6 +370,43 @@ print("상담 시나리오 저장 완료")
 for k, v in FLOW.items():
     n = len(v.get("buttons", []))
     print(f"  {k:<8} 버튼 {n}개  {v['text'][:34]}...")
+""")
+
+md("""
+## 5-1-1. Firebase Authentication 준비 (이메일 인증 가입)
+
+카카오·네이버 계정이 없는 고객도 가입할 수 있도록 **이메일 인증 회원가입**을 함께 제공합니다.
+Google Cloud Identity Platform과 Firebase Authentication은 같은 백엔드(Identity Toolkit)를 씁니다.
+
+콘솔에서 두 가지만 켜주세요.
+
+1. [Firebase 콘솔](https://console.firebase.google.com) → 프로젝트 선택 → **Authentication → 시작하기 → 이메일/비밀번호 사용 설정**
+2. **Authentication → 설정 → 승인된 도메인**에 홈페이지 도메인 추가
+   (`<프로젝트ID>.web.app` 은 기본 포함, 커스텀 도메인은 직접 추가)
+
+그다음 **프로젝트 설정 → 내 앱 → 웹 앱**의 `apiKey` 를 2단계 `FIREBASE_API_KEY` 에 넣습니다.
+웹 API 키는 공개되어도 되는 값입니다. 실제 권한은 서버가 ID 토큰을 검증해 판단합니다.
+""")
+
+code(r"""
+# 웹 앱 설정을 자동으로 가져옵니다. 실패하면 콘솔에서 직접 복사해 2단계에 붙여넣으세요.
+!npm -q install -g firebase-tools 2>/dev/null | tail -1
+cfg = !firebase apps:sdkconfig WEB --project {PROJECT_ID} --json 2>/dev/null
+try:
+    import json as _j
+    sdk = _j.loads("".join(cfg))["result"]["sdkConfig"]
+    print("apiKey     :", sdk.get("apiKey"))
+    print("authDomain :", sdk.get("authDomain"))
+    print("\n위 apiKey 를 2단계 FIREBASE_API_KEY 에 넣고 그 셀을 다시 실행하세요.")
+except Exception:
+    print("자동 조회 실패 — Firebase 콘솔 > 프로젝트 설정 > 내 앱 > 웹 앱에서 apiKey 를 복사하세요.")
+    print("웹 앱이 없다면 콘솔에서 '앱 추가 > 웹'으로 하나 만들면 됩니다.")
+
+print("\n현재 설정")
+print("  FIREBASE_API_KEY     :", (FIREBASE_API_KEY[:8] + "...") if FIREBASE_API_KEY else "(비어 있음)")
+print("  FIREBASE_AUTH_DOMAIN :", FIREBASE_AUTH_DOMAIN)
+if not FIREBASE_API_KEY:
+    print("\n키가 없으면 이메일 가입 버튼은 숨겨지고 카카오·네이버만 노출됩니다.")
 """)
 
 md("""
@@ -962,6 +1005,7 @@ google-cloud-firestore==2.19.0
 google-genai==1.2.0
 pydantic==2.10.4
 requests==2.32.3
+firebase-admin==6.6.0
 ''')
 
 (APP / "search.sql").write_text(SEARCH_SQL)
@@ -1096,6 +1140,8 @@ def embed_query(q):
         config=gt.EmbedContentConfig(task_type="RETRIEVAL_QUERY", output_dimensionality=EMB_DIM))
     return list(r.embeddings[0].values)
 
+_notified = set()   # 세션당 미응답 통보 1회
+
 def retrieve(tenant_id, q):
     cfg = bigquery.QueryJobConfig(query_parameters=[
         bigquery.ArrayQueryParameter("qvec", "FLOAT64", embed_query(q)),
@@ -1165,6 +1211,34 @@ def health():
 def get_flow():
     return {{"nodes": flow()}}
 
+def miss_message():
+    c = company()
+    return ("제가 가진 자료에서는 이 질문의 근거를 찾지 못했습니다.\\n"
+            "정확하지 않은 답변을 드리는 대신 담당자에게 전달해 드리겠습니다.\\n"
+            "회신받으실 이메일 주소를 남겨주시면 " + str(c.get("email", "")) +
+            " 담당자가 확인 후 회신드리겠습니다.")
+
+def notify_unanswered(session_id, q, vec_hit, kw_hit, top):
+    # 고객이 이메일을 남기지 않아도 지식 공백은 담당자가 바로 알아야 합니다.
+    if os.environ.get("NOTIFY_UNANSWERED", "true").lower() != "true":
+        return
+    key = (session_id or "web") + "|" + q[:40]
+    if key in _notified:
+        return
+    if len(_notified) > 5000:
+        _notified.clear()
+    _notified.add(key)
+    send_mail("[BSM 미응답 질문] " + q[:40],
+              ("챗봇이 답하지 못한 질문입니다. 지식 보완이 필요합니다.\\n\\n"
+               "질문: " + q + "\\n"
+               "세션: " + str(session_id) + "\\n"
+               "시각: " + now_iso() + "\\n\\n"
+               "검색 결과\\n"
+               "  벡터 검색 근거: " + ("있음" if vec_hit else "없음") + "\\n"
+               "  키워드 검색 근거: " + ("있음" if kw_hit else "없음") + "\\n"
+               "  최고 RRF 점수: " + str(round(top, 5)) + " (기준 " + str(MIN_RRF) + ")\\n\\n"
+               "고객이 이메일을 남기면 정리된 문의가 별도로 도착합니다."))
+
 @app.post("/chat", response_model=ChatOut)
 def chat(inp: ChatIn):
     t0 = time.time()
@@ -1172,18 +1246,18 @@ def chat(inp: ChatIn):
     if not q:
         return ChatOut(answer="무엇을 도와드릴까요?", action="NONE")
 
+    # ── 하이브리드 RAG : 두 검색을 각각 판정합니다 ──────────────
     hits = retrieve(inp.tenant_id, q)
+    vec_hit = any(h.get("vec_rank") is not None for h in hits)
+    kw_hit  = any(h.get("kw_rank") is not None for h in hits)
     top = hits[0]["rrf"] if hits else 0.0
-    c = company()
+    weak = (not hits) or (top < MIN_RRF)
 
-    if not hits or top < MIN_RRF:
-        # 근거 없음 → 모델을 부르지 않고 담당자 전달 흐름으로 넘깁니다.
-        out = ChatOut(
-            answer=("제가 가진 자료로는 정확히 답변드리기 어려운 내용입니다.\\n"
-                    "문의 내용을 정리해 담당자에게 전달해 드릴까요? "
-                    "회신받으실 이메일 주소를 알려주시면 " + str(c.get("email", "")) +
-                    " 담당자가 확인 후 답변드립니다."),
-            action="CONTACT", grounded=False, escalate=True)
+    if weak:
+        # 벡터 검색과 키워드 검색 어느 쪽에서도 쓸 만한 근거가 없습니다.
+        # 모델을 호출하지 않고 담당자 전달로 넘깁니다.
+        notify_unanswered(inp.session_id, q, vec_hit, kw_hit, top)
+        out = ChatOut(answer=miss_message(), action="CONTACT", grounded=False, escalate=True)
     else:
         ctx = "\\n\\n".join("[" + str(i + 1) + "] " + h["title"] + "\\n" + h["content"]
                            for i, h in enumerate(hits))
@@ -1200,14 +1274,15 @@ def chat(inp: ChatIn):
             d = json.loads(r.text)
             g = bool(d.get("grounded", False))
             act = d.get("action", "NONE") if g else "CONTACT"
-            out = ChatOut(answer=d.get("answer", "").strip() if g else
-                          ("제가 가진 자료로는 정확히 답변드리기 어렵습니다. "
-                           "문의 내용을 담당자에게 전달해 드릴까요?"),
+            if not g:
+                # 근거는 있었지만 모델이 답을 확신하지 못한 경우도 전달로 넘깁니다.
+                notify_unanswered(inp.session_id, q, vec_hit, kw_hit, top)
+            out = ChatOut(answer=d.get("answer", "").strip() if g else miss_message(),
                           sources=sorted({{h["title"] for h in hits[:3]}}) if g else [],
                           action=act, grounded=g, escalate=not g)
         except Exception:
-            out = ChatOut(answer="일시적인 오류가 발생했습니다. 문의 내용을 담당자에게 전달해 드릴까요?",
-                          action="CONTACT", grounded=False, escalate=True)
+            notify_unanswered(inp.session_id, q, vec_hit, kw_hit, top)
+            out = ChatOut(answer=miss_message(), action="CONTACT", grounded=False, escalate=True)
 
     try:
         bq.insert_rows_json(DS + ".chat_logs", [{{
@@ -1365,6 +1440,47 @@ def social_callback(provider: str, code: str = "", state: str = ""):
 
     return RedirectResponse(target + "#bsm_login=" + sign(member_id))
 
+class FbIn(BaseModel):
+    id_token: str
+
+@app.post("/auth/firebase")
+def auth_firebase(inp: FbIn):
+    # Firebase Authentication 이 발급한 ID 토큰을 검증하고 자체 세션을 발급합니다.
+    # 이메일 인증을 마치지 않은 계정은 거부합니다.
+    try:
+        import firebase_admin
+        from firebase_admin import auth as fbauth
+        if not firebase_admin._apps:
+            firebase_admin.initialize_app()
+        claims = fbauth.verify_id_token(inp.id_token)
+    except Exception:
+        return {{"ok": False, "error": "INVALID_TOKEN"}}
+
+    if not claims.get("email_verified"):
+        return {{"ok": False, "error": "EMAIL_NOT_VERIFIED"}}
+
+    uid = claims.get("uid") or claims.get("sub", "")
+    email = claims.get("email", "")
+    name = claims.get("name", "") or (email.split("@")[0] if email else "")
+    member_id = "email_" + uid
+
+    ref = fs.collection("members").document(member_id)
+    if not ref.get().exists:
+        ref.set({{"provider": "email", "provider_uid": uid, "email": email, "name": name,
+                 "created_at": firestore.SERVER_TIMESTAMP,
+                 "last_login_at": firestore.SERVER_TIMESTAMP}})
+        try:
+            bq.insert_rows_json(DS + ".members", [{{
+                "member_id": member_id, "provider": "email", "provider_uid": uid,
+                "email": email, "name": name, "company": "", "phone": "",
+                "created_at": now_iso(), "last_login_at": now_iso()}}])
+        except Exception:
+            pass
+    else:
+        ref.update({{"last_login_at": firestore.SERVER_TIMESTAMP, "email": email}})
+
+    return {{"ok": True, "token": sign(member_id), "email": email, "name": name}}
+
 @app.get("/me")
 def me(authorization: str = ""):
     mid = bearer(authorization)
@@ -1433,7 +1549,8 @@ code(r"""
 ALLOW_ORIGINS = f"{SITE_DOMAIN},https://{PROJECT_ID}.web.app"
 ENVS = (f"PROJECT_ID={PROJECT_ID},DATASET={DATASET},VERTEX_LOC={VERTEX_LOC},"
         f"GEN_MODEL={GEN_MODEL},EMBED_MODEL={EMBED_MODEL},EMBED_DIM={EMBED_DIM},"
-        f"MIN_RRF={MIN_RRF},SITE_DOMAIN={SITE_DOMAIN},ALLOW_ORIGINS={ALLOW_ORIGINS}")
+        f"MIN_RRF={MIN_RRF},SITE_DOMAIN={SITE_DOMAIN},ALLOW_ORIGINS={ALLOW_ORIGINS},"
+        f"NOTIFY_UNANSWERED=true")
 SECRETS = ("SESSION_SECRET=SESSION_SECRET:latest,"
            "KAKAO_CLIENT_ID=KAKAO_CLIENT_ID:latest,"
            "KAKAO_CLIENT_SECRET=KAKAO_CLIENT_SECRET:latest,"
@@ -1514,6 +1631,9 @@ PUB = Path("/content/public"); PUB.mkdir(parents=True, exist_ok=True)
 (function(){
   var me = document.currentScript;
   var TENANT = (me && me.getAttribute("data-tenant")) || "''' + BSM_TENANT + '''";
+  var MODE   = (me && me.getAttribute("data-mode")) || "bubble";   // bubble | center
+  var FB_KEY = "''' + FIREBASE_API_KEY + '''";   // Firebase 웹 API 키 (없으면 이메일 가입 숨김)
+  var IDT    = "https://identitytoolkit.googleapis.com/v1/accounts:";
   var API    = "''' + API_URL + '''";
   var PHONE  = "''' + COMPANY["phone"] + '''";
   var MAILTO = "''' + COMPANY["email"] + '''";
@@ -1551,11 +1671,16 @@ PUB = Path("/content/public"); PUB.mkdir(parents=True, exist_ok=True)
    ".bw-form{align-self:stretch;background:#fff;border:1px solid #E2DFD8;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:7px}",
    ".bw-form label{font-size:11.5px;color:#6A6E73}",
    ".bw-form input,.bw-form textarea{border:1px solid #E2DFD8;border-radius:5px;padding:8px 9px;font-size:13px;font-family:inherit;width:100%}",
-   ".bw-form textarea{min-height:64px;resize:vertical}"
+   ".bw-form textarea{min-height:64px;resize:vertical}",
+   ".bw.ctr{right:0;bottom:0;top:0;left:0;display:none;align-items:center;justify-content:center;background:rgba(20,22,26,.58);padding:16px}",
+   ".bw.ctr.on{display:flex}",
+   ".bw.ctr .bw-box{width:420px;max-width:100%;height:620px;max-height:86vh}",
+   ".bw.ctr .bw-open{display:none}"
   ].join("");
   document.head.appendChild(css);
 
-  var root = document.createElement("div"); root.className = "bw";
+  var root = document.createElement("div");
+  root.className = (MODE === "center") ? "bw ctr" : "bw";
   root.innerHTML =
     '<div class="bw-box" id="bwBox">' +
       '<div class="bw-hd">BSM AI 상담<span class="who" id="bwWho"></span><span class="x" id="bwX">&times;</span></div>' +
@@ -1632,13 +1757,102 @@ PUB = Path("/content/public"); PUB.mkdir(parents=True, exist_ok=True)
   function screenPriceGate(){
     clear();
     if(member){ return screenInquiry(); }
-    bot("가격과 견적은 회원 확인 후 안내해 드립니다.\\n카카오 또는 네이버 계정으로 간편하게 시작하실 수 있습니다.");
-    buttons([
+    bot("가격과 견적은 회원 확인 후 안내해 드립니다.\\n아래 방법 중 편하신 것으로 시작하세요.");
+    var opts = [
       {label:"카카오로 시작하기", style:"ka", onClick:function(){ login("kakao"); }},
-      {label:"네이버로 시작하기", style:"na", onClick:function(){ login("naver"); }},
-      {label:"로그인 없이 전화 상담", onClick:function(){ location.href="tel:"+PHONE; }}
-    ]);
+      {label:"네이버로 시작하기", style:"na", onClick:function(){ login("naver"); }}
+    ];
+    if(FB_KEY){ opts.push({label:"이메일로 가입 · 로그인", onClick:function(){ push(screenEmailAuth); }}); }
+    opts.push({label:"로그인 없이 전화 상담", onClick:function(){ location.href="tel:"+PHONE; }});
+    buttons(opts);
     sys("가입 시 이름과 이메일만 수집하며, 견적 회신 목적으로만 사용합니다.");
+  }
+
+  // ── 이메일 인증 가입 (Firebase Authentication) ──────────
+  function idt(method, body){
+    return fetch(IDT + method + "?key=" + FB_KEY, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(body)
+    }).then(function(r){ return r.json(); });
+  }
+
+  function fbFinish(idToken){
+    return post("/auth/firebase", {id_token:idToken}).then(function(d){
+      if(d && d.ok){
+        setToken(d.token);
+        member = {name:d.name, email:d.email};
+        who.textContent = (d.name || "회원") + " 님";
+        stack=[]; clear(); push(screenInquiry);
+      } else if(d && d.error === "EMAIL_NOT_VERIFIED"){
+        sys("이메일 인증이 아직 완료되지 않았습니다. 메일함의 인증 링크를 눌러주세요.");
+      } else {
+        sys("로그인 처리에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      }
+    });
+  }
+
+  function screenEmailAuth(){
+    clear();
+    bot("이메일로 간편하게 시작하실 수 있습니다.\\n처음이시면 회원가입을 눌러주세요. 인증 메일이 발송됩니다.");
+    var f=document.createElement("div"); f.className="bw-form";
+    f.innerHTML =
+      '<label>이메일</label><input id="bwFE" type="email" placeholder="name@example.com" autocomplete="username">' +
+      '<label>비밀번호 (6자 이상)</label><input id="bwFP" type="password" placeholder="••••••" autocomplete="current-password">';
+    log.appendChild(f);
+    var E=function(){ return (f.querySelector("#bwFE").value||"").trim(); };
+    var P=function(){ return f.querySelector("#bwFP").value||""; };
+
+    buttons([
+      {label:"로그인", style:"pri", onClick:function(){
+        var btn=this; btn.disabled=true;
+        idt("signInWithPassword", {email:E(), password:P(), returnSecureToken:true})
+        .then(function(d){
+          if(d.error){ sys(fbErr(d.error.message)); btn.disabled=false; return; }
+          return idt("lookup", {idToken:d.idToken}).then(function(u){
+            var ok = u.users && u.users[0] && u.users[0].emailVerified;
+            if(!ok){
+              sys("이메일 인증이 필요합니다. 인증 메일을 다시 보내드릴까요?");
+              buttons([{label:"인증 메일 다시 보내기", onClick:function(){
+                idt("sendOobCode", {requestType:"VERIFY_EMAIL", idToken:d.idToken})
+                .then(function(){ sys("인증 메일을 보냈습니다. 확인 후 다시 로그인해 주세요."); });
+              }}]);
+              btn.disabled=false; return;
+            }
+            return fbFinish(d.idToken);
+          });
+        })["catch"](function(){ sys("네트워크 오류가 발생했습니다."); btn.disabled=false; });
+      }},
+      {label:"회원가입", onClick:function(){
+        var btn=this; btn.disabled=true;
+        idt("signUp", {email:E(), password:P(), returnSecureToken:true})
+        .then(function(d){
+          if(d.error){ sys(fbErr(d.error.message)); btn.disabled=false; return; }
+          return idt("sendOobCode", {requestType:"VERIFY_EMAIL", idToken:d.idToken})
+          .then(function(){
+            bot("가입이 접수되었습니다.\\n" + E() + " 로 인증 메일을 보냈습니다.\\n" +
+                "메일의 링크를 누르신 뒤 로그인 버튼을 눌러주세요.");
+            btn.disabled=false;
+          });
+        })["catch"](function(){ sys("네트워크 오류가 발생했습니다."); btn.disabled=false; });
+      }},
+      {label:"비밀번호 재설정 메일", onClick:function(){
+        if(!E()){ sys("이메일을 입력해 주세요."); return; }
+        idt("sendOobCode", {requestType:"PASSWORD_RESET", email:E()})
+        .then(function(){ sys("비밀번호 재설정 메일을 보냈습니다."); });
+      }}
+    ]);
+  }
+
+  function fbErr(code){
+    var m={EMAIL_EXISTS:"이미 가입된 이메일입니다. 로그인을 눌러주세요.",
+           INVALID_LOGIN_CREDENTIALS:"이메일 또는 비밀번호가 올바르지 않습니다.",
+           EMAIL_NOT_FOUND:"가입되지 않은 이메일입니다.",
+           INVALID_PASSWORD:"비밀번호가 올바르지 않습니다.",
+           WEAK_PASSWORD:"비밀번호는 6자 이상이어야 합니다.",
+           INVALID_EMAIL:"이메일 형식을 확인해 주세요.",
+           TOO_MANY_ATTEMPTS_TRY_LATER:"시도가 많습니다. 잠시 후 다시 시도해 주세요."};
+    for(var k in m){ if(code && code.indexOf(k)===0) return m[k]; }
+    return "처리에 실패했습니다. 다시 시도해 주세요.";
   }
 
   function login(provider){
@@ -1723,13 +1937,22 @@ PUB = Path("/content/public"); PUB.mkdir(parents=True, exist_ok=True)
   }
 
   // ── 이벤트 ──────────────────────────────────────────────
-  root.querySelector("#bwOpen").onclick=function(){
-    box.style.display="flex"; this.style.display="none";
+  function openChat(){
+    if(MODE==="center"){ root.classList.add("on"); box.style.display="flex"; }
+    else { box.style.display="flex"; root.querySelector("#bwOpen").style.display="none"; }
     if(!log.childNodes.length) home();
-  };
-  root.querySelector("#bwX").onclick=function(){
-    box.style.display="none"; root.querySelector("#bwOpen").style.display="";
-  };
+    setTimeout(function(){ inp.focus(); }, 60);
+  }
+  function closeChat(){
+    if(MODE==="center"){ root.classList.remove("on"); }
+    else { box.style.display="none"; root.querySelector("#bwOpen").style.display=""; }
+  }
+  window.BSMChat = {open:openChat, close:closeChat};
+
+  root.querySelector("#bwOpen").onclick = openChat;
+  root.querySelector("#bwX").onclick = closeChat;
+  root.addEventListener("click", function(e){ if(MODE==="center" && e.target===root) closeChat(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape") closeChat(); });
   root.querySelector("#bwBack").onclick=back;
   root.querySelector("#bwHome").onclick=home;
   root.querySelector("#bwEnd").onclick=function(){
@@ -1744,10 +1967,11 @@ PUB = Path("/content/public"); PUB.mkdir(parents=True, exist_ok=True)
     if(h.indexOf("bsm_login=")>-1){
       setToken(h.split("bsm_login=")[1].split("&")[0]);
       history_replace();
+      setTimeout(function(){ openChat(); stack=[]; clear(); push(screenPriceGate); }, 500);
     } else if(h.indexOf("bsm_login_error=")>-1){
       history_replace();
-      setTimeout(function(){ box.style.display="flex"; root.querySelector("#bwOpen").style.display="none";
-        clear(); bot("로그인이 완료되지 않았습니다. 다시 시도해 주세요."); push(screenPriceGate); }, 300);
+      setTimeout(function(){ openChat(); clear();
+        bot("로그인이 완료되지 않았습니다. 다시 시도해 주세요."); push(screenPriceGate); }, 300);
     }
     function history_replace(){
       try { window.history.replaceState(null,"",location.pathname+location.search); } catch(e){}
@@ -1766,174 +1990,275 @@ PUB = Path("/content/public"); PUB.mkdir(parents=True, exist_ok=True)
 })();
 ''')
 
-# ── index.html : 공식 홈페이지 ────────────────────────────────────
+# ── index.html : AI노마드챗봇 공식 홈페이지 ──────────────────────
 (PUB / "index.html").write_text(f'''<!doctype html>
 <html lang="ko"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BSM AI — 기업용 하이브리드 RAG 챗봇</title>
-<meta name="description" content="PDF·홈페이지·FAQ를 학습해 고객 문의에 답하는 기업 전용 AI 챗봇. 무료 시작, 해결한 만큼만 과금.">
+<title>{BRAND} — 기업용 하이브리드 RAG 상담 챗봇</title>
+<meta name="description" content="PDF·홈페이지·FAQ를 학습해 24시간 고객 문의에 답하는 기업 전용 AI 챗봇. 무료로 시작하고 해결한 만큼만 결제하세요.">
+<meta property="og:title" content="{BRAND}">
+<meta property="og:description" content="근거를 찾아 답하고, 모르면 담당자에게 넘깁니다.">
 <style>
 *{{box-sizing:border-box}}
-body{{margin:0;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;color:#14161A;line-height:1.7}}
-.w{{max-width:1080px;margin:0 auto;padding:0 24px}}
-nav{{background:#14161A;position:sticky;top:0;z-index:50}}
-nav .w{{display:flex;align-items:center;gap:24px;padding:13px 24px}}
-nav a{{color:#9B978F;text-decoration:none;font-size:14px}}
-nav a:hover{{color:#fff}}
-nav .lg{{color:#fff;font-weight:700;letter-spacing:.12em;font-size:15px;margin-right:auto}}
-nav .lg b{{color:#D68189}}
-nav .tel{{color:#fff!important;border:1px solid #2E3238;padding:6px 12px}}
-header{{background:#14161A;color:#F5F3EE;padding:66px 0 74px}}
-header h1{{font-size:clamp(30px,4.6vw,46px);line-height:1.2;margin:0 0 18px;font-weight:700}}
-header p{{font-size:17px;color:#CFCBC3;max-width:46ch;margin:0 0 28px}}
-.kk{{font-size:12px;letter-spacing:.2em;color:#D68189;margin:0 0 16px;font-weight:600}}
-.btn{{display:inline-block;padding:12px 22px;font-size:15px;font-weight:600;text-decoration:none;margin-right:10px}}
-.b1{{background:#8C2F39;color:#fff}} .b2{{border:1px solid #2E3238;color:#F5F3EE}}
-.stack{{margin-top:30px;font-size:12.5px;color:#7E7A74;letter-spacing:.08em}}
-section{{padding:64px 0;border-bottom:1px solid #E8E5DE}}
-h2{{font-size:clamp(23px,3vw,31px);margin:0 0 10px}}
-.lede{{color:#4A5056;max-width:60ch;margin:0 0 30px}}
-.g4{{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:#E8E5DE;border:1px solid #E8E5DE}}
-.g4>div{{background:#F8F7F5;padding:22px}}
-.g4 h3{{margin:0 0 7px;font-size:16px}} .g4 p{{margin:0;font-size:14px;color:#4A5056}}
-.n{{font-size:12px;font-weight:700;color:#8C2F39;letter-spacing:.08em;margin-bottom:9px}}
-.plans{{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:16px;align-items:start}}
-.price{{border:1px solid #E2DFD8;padding:24px;background:#fff}}
-.price.hl{{border:2px solid #8C2F39}}
-.price .p{{font-size:30px;font-weight:700;margin:10px 0 2px}}
-.price .p span{{font-size:15px;font-weight:400;color:#6A6E73}}
-.price ul{{list-style:none;padding:0;margin:16px 0 0}}
-.price li{{font-size:14.5px;padding:5px 0 5px 20px;position:relative;color:#3A4046}}
-.price li:before{{content:"✓";position:absolute;left:0;color:#1E6A5B;font-weight:700}}
-.flow{{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;white-space:pre;overflow-x:auto;
-background:#14161A;color:#CFCBC3;padding:22px;line-height:1.75}}
-footer{{background:#14161A;color:#9B978F;padding:36px 0;font-size:13.5px}}
-footer a{{color:#D68189}}
-.cc{{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px}}
-.cc div{{background:#F8F7F5;border:1px solid #E8E5DE;padding:22px}}
-.cc .k{{font-size:11.5px;letter-spacing:.14em;color:#8C2F39;font-weight:700;margin-bottom:8px}}
-.cc .v{{font-size:20px;font-weight:600;word-break:break-all}}
-.cc a{{color:inherit;text-decoration:none}}
+:root{{--ink:#14161A;--ink2:#3F464D;--mut:#6E747A;--line:#E6E3DC;--bg:#fff;--soft:#F7F6F3;
+       --acc:#8C2F39;--acc2:#B5424D;--ok:#1E6A5B}}
+html{{scroll-behavior:smooth}}
+body{{margin:0;font-family:system-ui,-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+      color:var(--ink);line-height:1.72;background:var(--bg);-webkit-font-smoothing:antialiased}}
+.w{{max-width:1120px;margin:0 auto;padding:0 24px}}
+a{{color:inherit}}
+h1,h2,h3{{letter-spacing:-.02em;text-wrap:balance}}
+
+/* 내비 */
+nav{{position:sticky;top:0;z-index:60;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);
+     border-bottom:1px solid var(--line)}}
+nav .w{{display:flex;align-items:center;gap:26px;padding:14px 24px}}
+.lg{{font-weight:800;font-size:17px;letter-spacing:-.03em;margin-right:auto;white-space:nowrap}}
+.lg i{{font-style:normal;color:var(--acc)}}
+nav a.mn{{color:var(--ink2);text-decoration:none;font-size:14.5px;font-weight:500}}
+nav a.mn:hover{{color:var(--acc)}}
+.btn{{display:inline-block;padding:11px 20px;border-radius:8px;font-size:14.5px;font-weight:600;
+      text-decoration:none;border:1px solid transparent;cursor:pointer;font-family:inherit;line-height:1.4}}
+.b-pri{{background:var(--acc);color:#fff}} .b-pri:hover{{background:#75262f}}
+.b-out{{background:#fff;color:var(--ink);border-color:var(--line)}} .b-out:hover{{border-color:var(--acc);color:var(--acc)}}
+.b-lg{{padding:16px 34px;font-size:16.5px;border-radius:10px}}
+
+/* 히어로 */
+header{{padding:76px 0 66px;text-align:center;background:
+   radial-gradient(1200px 420px at 50% -120px, #F3EAEA 0%, rgba(255,255,255,0) 70%)}}
+.eyebrow{{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--acc);
+   background:#F6EAEA;border-radius:999px;padding:6px 14px;margin-bottom:22px}}
+header h1{{font-size:clamp(32px,5.2vw,54px);line-height:1.2;margin:0 0 20px;font-weight:800}}
+header p.sub{{font-size:clamp(15.5px,2vw,18px);color:var(--ink2);max-width:52ch;margin:0 auto 34px}}
+.cta{{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}}
+.hint{{margin-top:18px;font-size:13px;color:var(--mut)}}
+.strip{{margin-top:52px;border-top:1px solid var(--line);padding-top:22px;display:flex;gap:28px;
+   justify-content:center;flex-wrap:wrap;font-size:12.5px;letter-spacing:.08em;color:var(--mut);font-weight:600}}
+
+section{{padding:78px 0;border-top:1px solid var(--line);scroll-margin-top:72px}}
+.sec-lab{{font-size:12.5px;font-weight:700;letter-spacing:.12em;color:var(--acc);margin:0 0 12px}}
+h2{{font-size:clamp(24px,3.4vw,36px);margin:0 0 12px;font-weight:800;line-height:1.3}}
+.lede{{color:var(--ink2);max-width:60ch;margin:0 0 38px;font-size:16px}}
+.center{{text-align:center}} .center .lede{{margin-left:auto;margin-right:auto}}
+
+.grid4{{display:grid;grid-template-columns:repeat(auto-fit,minmax(232px,1fr));gap:18px}}
+.card{{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:26px 24px}}
+.card h3{{margin:0 0 9px;font-size:17px;font-weight:700}}
+.card p{{margin:0;font-size:14.5px;color:var(--ink2);line-height:1.66}}
+.card .ic{{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--acc);margin-bottom:12px}}
+
+/* 하이브리드 RAG 흐름 */
+.flow{{display:grid;gap:12px;max-width:820px;margin:0 auto}}
+.frow{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+.fbox{{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px}}
+.fbox .t{{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--acc);margin-bottom:6px}}
+.fbox .d{{font-size:14px;color:var(--ink2);line-height:1.6}}
+.fmid{{background:var(--ink);color:#fff;border-radius:10px;padding:14px 18px;text-align:center;
+   font-weight:700;font-size:15px}}
+.fmid small{{display:block;font-weight:400;font-size:13px;color:#A9A6A0;margin-top:4px}}
+.farrow{{text-align:center;color:#C7C3BB;font-size:15px;line-height:1}}
+.fsplit{{display:grid;grid-template-columns:1fr 1fr;gap:12px}}
+.fend{{border-radius:10px;padding:18px;border:1px solid var(--line)}}
+.fend.ok{{background:#E9F2EF;border-color:#BFDCD3}}
+.fend.no{{background:#F8EDED;border-color:#E5C9CB}}
+.fend h4{{margin:0 0 7px;font-size:15px}}
+.fend.ok h4{{color:var(--ok)}} .fend.no h4{{color:var(--acc)}}
+.fend p{{margin:0;font-size:13.5px;color:var(--ink2);line-height:1.62}}
+
+/* 요금 */
+.plans{{display:grid;grid-template-columns:repeat(auto-fit,minmax(222px,1fr));gap:16px;align-items:start}}
+.plan{{border:1px solid var(--line);border-radius:12px;padding:24px 22px;background:#fff}}
+.plan.hl{{border:2px solid var(--acc);box-shadow:0 10px 30px -20px rgba(140,47,57,.5)}}
+.plan .nm{{font-size:12.5px;font-weight:700;letter-spacing:.1em;color:var(--mut)}}
+.plan.hl .nm{{color:var(--acc)}}
+.plan .pr{{font-size:29px;font-weight:800;margin:10px 0 2px}}
+.plan .pr span{{font-size:14px;font-weight:400;color:var(--mut)}}
+.plan .vat{{font-size:12.5px;color:var(--mut)}}
+.plan ul{{list-style:none;padding:0;margin:16px 0 0}}
+.plan li{{font-size:14px;color:var(--ink2);padding:4px 0 4px 18px;position:relative}}
+.plan li:before{{content:"";position:absolute;left:0;top:13px;width:8px;height:1.5px;background:#C7C3BB}}
+
+.steps{{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:18px;counter-reset:st}}
+.step{{border-top:2px solid var(--acc);padding-top:16px}}
+.step .n{{font-size:12px;font-weight:700;color:var(--acc);letter-spacing:.1em;margin-bottom:8px}}
+.step h3{{margin:0 0 7px;font-size:16px}}
+.step p{{margin:0;font-size:14px;color:var(--ink2)}}
+
+.faq{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}}
+.fq{{border:1px solid var(--line);border-radius:10px;padding:20px 22px;background:#fff}}
+.fq h3{{margin:0 0 7px;font-size:15px}}
+.fq p{{margin:0;font-size:14px;color:var(--ink2);line-height:1.65}}
+
+.band{{background:var(--ink);color:#fff;text-align:center;padding:70px 0;border:0}}
+.band h2{{color:#fff}} .band p{{color:#B7B3AC;max-width:52ch;margin:0 auto 30px}}
+
+.cc{{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}}
+.cc .b{{border:1px solid var(--line);border-radius:12px;padding:24px;background:var(--soft)}}
+.cc .k{{font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--acc);margin-bottom:10px}}
+.cc .v{{font-size:20px;font-weight:700;word-break:break-all}}
+.cc .v a{{text-decoration:none}} .cc p{{margin:6px 0 0;font-size:13.5px;color:var(--mut)}}
+
+footer{{background:var(--ink);color:#8E8B85;padding:44px 0;font-size:13.5px;line-height:1.8}}
+footer a{{color:#C9C5BE}}
+footer .top{{color:#fff;font-weight:800;font-size:16px;margin-bottom:10px}}
+@media (max-width:760px){{
+  nav a.mn{{display:none}}
+  .frow,.fsplit{{grid-template-columns:1fr}}
+}}
 </style></head><body>
 
 <nav><div class="w">
-  <span class="lg">BSM<b>.</b>AI</span>
-  <a href="#product">PRODUCT</a><a href="#demo">DEMO</a><a href="#price">PRICE</a>
-  <a href="#tech">TECHNOLOGY</a><a href="#contact">CONTACT</a>
-  <a class="tel" href="tel:{COMPANY["phone"]}">{COMPANY["phone"]}</a>
+  <span class="lg">AI<i>노마드</i>챗봇</span>
+  <a class="mn" href="#feature">기능</a>
+  <a class="mn" href="#tech">동작 방식</a>
+  <a class="mn" href="#price">요금</a>
+  <a class="mn" href="#faq">FAQ</a>
+  <a class="mn" href="#contact">문의</a>
+  <button class="btn b-pri" onclick="openChat()">상담하기</button>
 </div></nav>
 
 <header><div class="w">
-  <p class="kk">ENTERPRISE HYBRID RAG CHATBOT</p>
-  <h1>기업의 데이터를<br>AI 상담 직원으로 바꿉니다</h1>
-  <p>PDF · 홈페이지 · FAQ를 연결하면 귀사 전용 AI 챗봇이 됩니다.
-     근거를 표시하고, 모르면 지어내지 않고 상담으로 연결합니다.
-     <b>해결한 대화만 요금을 받습니다.</b></p>
-  <a class="btn b1" href="#demo">AI 챗봇 직접 체험</a>
-  <a class="btn b2" href="#price">무료로 시작하기</a>
-  <div class="stack">GOOGLE CLOUD · BIGQUERY · GEMINI · HYBRID RAG</div>
+  <span class="eyebrow">HYBRID RAG · 24시간 AI 상담</span>
+  <h1>고객 문의, 이제<br>AI가 먼저 답합니다</h1>
+  <p class="sub">PDF·홈페이지·FAQ를 연결하면 우리 회사 전용 상담 챗봇이 됩니다.
+     근거를 찾아 답하고, 모르면 지어내지 않고 담당자에게 넘깁니다.</p>
+  <div class="cta">
+    <button class="btn b-pri b-lg" onclick="openChat()">AI 상담 시작하기</button>
+    <a class="btn b-out b-lg" href="#price">요금 보기</a>
+  </div>
+  <p class="hint">무료로 시작 · 카드 등록 없이 월 100건까지</p>
+  <div class="strip"><span>GOOGLE CLOUD</span><span>BIGQUERY</span><span>GEMINI</span>
+    <span>HYBRID RAG</span><span>근거 표시</span></div>
 </div></header>
 
-<section id="product"><div class="w">
-  <h2>회사마다 하나의 AI 상담직원이 필요한 시대</h2>
-  <p class="lede">자료를 보내주시면 정리와 검수까지 저희가 합니다. 사장님은 스크립트 한 줄만 넣으시면 됩니다.</p>
-  <div class="g4">
-    <div><div class="n">STEP 01</div><h3>자료 전달</h3><p>상품 목록, 이용안내 PDF, FAQ, 홈페이지 주소. 정리되지 않아도 괜찮습니다.</p></div>
-    <div><div class="n">STEP 02</div><h3>학습과 검수</h3><p>문서를 색인하고 실제 질문으로 정확도를 측정합니다. 기준 미달이면 보완합니다.</p></div>
-    <div><div class="n">STEP 03</div><h3>설치</h3><p>스크립트 한 줄. 카페24·워드프레스·자체 사이트 모두 동일합니다.</p></div>
-    <div><div class="n">STEP 04</div><h3>운영</h3><p>답하지 못한 질문 목록을 매주 보내드립니다. 그게 다음에 보완할 자료입니다.</p></div>
+<section id="feature"><div class="w center">
+  <p class="sec-lab">WHY {BRAND}</p>
+  <h2>답을 지어내지 않는 챗봇</h2>
+  <p class="lede">고객 응대에서 가장 위험한 것은 느린 답이 아니라 틀린 답입니다.
+     {BRAND}은 근거가 없으면 답하지 않습니다.</p>
+  <div class="grid4" style="text-align:left">
+    <div class="card"><div class="ic">01</div><h3>내 자료로 학습</h3>
+      <p>상품 정보, 이용 안내 PDF, 자주 묻는 질문, 홈페이지 주소까지 그대로 넣으면 됩니다. 정리는 저희가 합니다.</p></div>
+    <div class="card"><div class="ic">02</div><h3>근거를 함께 표시</h3>
+      <p>어느 문서를 보고 답했는지 함께 보여줍니다. 고객도 담당자도 답변을 검증할 수 있습니다.</p></div>
+    <div class="card"><div class="ic">03</div><h3>모르면 사람에게</h3>
+      <p>근거를 찾지 못하면 추측하지 않고 담당자에게 전달합니다. 고객에게는 회신 예정을 안내합니다.</p></div>
+    <div class="card"><div class="ic">04</div><h3>스크립트 한 줄</h3>
+      <p>홈페이지에 한 줄만 붙이면 끝입니다. 카페24·워드프레스·자체 사이트 모두 같습니다.</p></div>
   </div>
 </div></section>
 
-<section id="demo"><div class="w">
-  <h2>BSM AI에게 직접 물어보세요</h2>
-  <p class="lede">이 홈페이지의 챗봇이 바로 저희 제품입니다. 우측 하단 &lsquo;AI 상담&rsquo; 버튼을 눌러
-     가격, 설치 방법, 분양 조건을 물어보세요. 답변에는 근거 문서가 함께 표시됩니다.</p>
+<section id="tech"><div class="w center">
+  <p class="sec-lab">HOW IT WORKS</p>
+  <h2>두 개의 검색을 함께 씁니다</h2>
+  <p class="lede">의미로 찾는 벡터 검색과 단어로 찾는 키워드 검색을 동시에 실행하고 RRF로 합칩니다.
+     품번·규정 조항처럼 정확한 단어가 중요한 질문에 강한 이유입니다.</p>
+  <div class="flow">
+    <div class="fmid">고객 질문<small>홈페이지 · 카카오톡 · 상담 위젯</small></div>
+    <div class="farrow">&#9660;</div>
+    <div class="frow">
+      <div class="fbox"><div class="t">VECTOR SEARCH</div>
+        <div class="d">의미가 비슷한 문단을 찾습니다. 표현이 달라도 같은 뜻이면 걸립니다.</div></div>
+      <div class="fbox"><div class="t">KEYWORD SEARCH</div>
+        <div class="d">품번·모델명·조항 번호처럼 정확히 일치해야 하는 단어를 찾습니다.</div></div>
+    </div>
+    <div class="farrow">&#9660;</div>
+    <div class="fmid">RRF 융합<small>두 결과의 순위를 합쳐 상위 근거만 남깁니다</small></div>
+    <div class="farrow">&#9660;</div>
+    <div class="fsplit">
+      <div class="fend ok"><h4>근거 있음</h4>
+        <p>Gemini가 근거만 사용해 답변을 만들고, 참고한 문서를 함께 표시합니다. 고객은 즉시 답을 받습니다.</p></div>
+      <div class="fend no"><h4>근거 없음</h4>
+        <p>답을 만들지 않습니다. 문의 내용을 정리해 <b>{COMPANY["email"]}</b> 담당자에게 전달하고,
+           고객에게는 <b>확인 후 회신드리겠습니다</b> 라고 안내합니다.</p></div>
+    </div>
+  </div>
 </div></section>
 
-<section id="price"><div class="w">
+<section id="price"><div class="w center">
+  <p class="sec-lab">PRICING</p>
   <h2>해결한 만큼만 받습니다</h2>
-  <p class="lede">요금 기준은 상담원 수도, 대화 수도 아닌 <b>해결 건수</b>입니다.
-     챗봇이 근거를 갖고 답변을 끝낸 대화만 셉니다.
-     답을 못 찾아 상담원에게 넘긴 대화는 세지 않습니다. 못 맞힌 대화에는 비용을 청구하지 않습니다.</p>
-  <div class="plans">
-    <div class="price">
-      <div class="n">FREE</div>
-      <div class="p">0<span style="font-size:14px;font-weight:400;color:#6A6E73">원 / 월</span></div>
-      <div style="font-size:12.5px;color:#6A6E73">카드 등록 없이 시작</div>
-      <ul><li>해결 100건</li><li>문서 50페이지</li><li>웹 위젯</li><li>BSM 배지 표시</li></ul>
-    </div>
-    <div class="price">
-      <div class="n">STARTER</div>
-      <div class="p">39,000<span style="font-size:14px;font-weight:400;color:#6A6E73">원 / 월</span></div>
-      <div style="font-size:12.5px;color:#6A6E73">VAT 별도</div>
-      <ul><li>해결 500건</li><li>문서 300페이지</li><li>웹 위젯 1채널</li><li>배지 제거</li></ul>
-    </div>
-    <div class="price hl">
-      <div class="n" style="color:#8C2F39">GROWTH · 가장 많이 선택</div>
-      <div class="p">99,000<span style="font-size:14px;font-weight:400;color:#6A6E73">원 / 월</span></div>
-      <div style="font-size:12.5px;color:#6A6E73">VAT 별도 · 연납 2개월 할인</div>
-      <ul><li>해결 2,000건</li><li>문서 1,000페이지</li><li>카카오톡 채널 연동</li><li>주간 리포트</li></ul>
-    </div>
-    <div class="price">
-      <div class="n">SCALE</div>
-      <div class="p">249,000<span style="font-size:14px;font-weight:400;color:#6A6E73">원 / 월</span></div>
-      <div style="font-size:12.5px;color:#6A6E73">VAT 별도</div>
-      <ul><li>해결 8,000건</li><li>문서 5,000페이지</li><li>다채널 · API · SSO</li><li>전담 온보딩</li></ul>
-    </div>
+  <p class="lede">상담원 수도, 대화 수도 아닌 <b>해결 건수</b>가 기준입니다.
+     답을 찾지 못해 담당자에게 넘긴 대화는 세지 않습니다.</p>
+  <div class="plans" style="text-align:left">
+    <div class="plan"><div class="nm">FREE</div><div class="pr">0<span>원 / 월</span></div>
+      <div class="vat">카드 등록 없이 시작</div>
+      <ul><li>해결 100건</li><li>문서 50페이지</li><li>웹 위젯</li><li>브랜드 배지 표시</li></ul></div>
+    <div class="plan"><div class="nm">STARTER</div><div class="pr">39,000<span>원 / 월</span></div>
+      <div class="vat">VAT 별도</div>
+      <ul><li>해결 500건</li><li>문서 300페이지</li><li>웹 위젯 1채널</li><li>배지 제거</li></ul></div>
+    <div class="plan hl"><div class="nm">GROWTH · 추천</div><div class="pr">99,000<span>원 / 월</span></div>
+      <div class="vat">VAT 별도 · 연납 2개월 할인</div>
+      <ul><li>해결 2,000건</li><li>문서 1,000페이지</li><li>카카오톡 채널 연동</li><li>주간 리포트</li></ul></div>
+    <div class="plan"><div class="nm">SCALE</div><div class="pr">249,000<span>원 / 월</span></div>
+      <div class="vat">VAT 별도</div>
+      <ul><li>해결 8,000건</li><li>문서 5,000페이지</li><li>다채널 · API · SSO</li><li>전담 온보딩</li></ul></div>
   </div>
-  <p style="margin-top:20px;font-size:14px;color:#4A5056">
-    포함 건수를 넘기면 해결당 40원입니다. 모든 플랜에 하이브리드 RAG, 근거 표시,
-    모름 시 상담 연결이 포함됩니다. 결제와 세금계산서는 카페24 스토어에서 처리됩니다.</p>
-  <p style="margin-top:18px">
-    <a class="btn b1" href="{CAFE24_URL}" target="_blank" rel="noopener">지금 신청하기</a>
-    <a class="btn b2" style="border-color:#E2DFD8;color:#14161A" href="#contact">무료로 시작하기</a></p>
-  <p style="margin-top:24px;font-size:14.5px;color:#4A5056">
-    ERP·CRM 연동, 수만 페이지 규모, 사내 시스템 연계 등 기업 맞춤 구축은 별도 상담이 필요하며
-    연 {COMPANY["enterprise_from"]:,}원부터 시작합니다.
-    <a href="tel:{COMPANY["phone"]}">{COMPANY["phone"]}</a>으로 문의해 주세요.</p>
+  <p style="margin-top:22px;font-size:14px;color:var(--ink2)">
+    포함 건수 초과분은 해결당 40원입니다. ERP·CRM 연동 등 기업 맞춤 구축은
+    연 {COMPANY["enterprise_from"]:,}원부터이며 별도 상담이 필요합니다.</p>
+  <div class="cta" style="margin-top:26px">
+    <button class="btn b-pri b-lg" onclick="openChat()">가격 문의하기</button>
+    <a class="btn b-out b-lg" href="{CAFE24_URL}" target="_blank" rel="noopener">바로 신청</a>
+  </div>
 </div></section>
 
-<section id="tech"><div class="w">
-  <h2>Google Cloud 기반 서버리스 아키텍처</h2>
-  <p class="lede">의미 검색과 키워드 검색을 함께 돌리고 RRF로 합칩니다. 품번·규정처럼 정확한 단어가 중요한 질문에 강한 이유입니다.</p>
-  <div class="flow">User Question
-     |
-Query Analyzer
-     |
-  +--+--------------+
-  |                 |
-Keyword Search   Vector Search
-  |                 |
-  +--- BigQuery ----+
-     |
-    RRF
-     |
-  Gemini
-     |
-Citation / Guardrail
-     |
-Verified Answer</div>
+<section><div class="w center">
+  <p class="sec-lab">HOW TO START</p>
+  <h2>자료만 주시면 됩니다</h2>
+  <p class="lede">개발자가 없어도 도입할 수 있습니다. 학습과 검수는 저희가 합니다.</p>
+  <div class="steps" style="text-align:left">
+    <div class="step"><div class="n">STEP 01</div><h3>자료 전달</h3><p>PDF·엑셀·홈페이지 주소 무엇이든 좋습니다. 정리되지 않아도 괜찮습니다.</p></div>
+    <div class="step"><div class="n">STEP 02</div><h3>학습과 검수</h3><p>색인 후 실제 질문으로 정확도를 측정합니다. 기준 미달이면 자료를 보완합니다.</p></div>
+    <div class="step"><div class="n">STEP 03</div><h3>설치</h3><p>받으신 스크립트 한 줄을 홈페이지에 붙입니다. 2~5영업일이면 끝납니다.</p></div>
+    <div class="step"><div class="n">STEP 04</div><h3>운영</h3><p>답하지 못한 질문 목록을 매주 보내드립니다. 그게 다음에 보완할 자료입니다.</p></div>
+  </div>
 </div></section>
 
-<section id="contact"><div class="w">
+<section id="faq"><div class="w center">
+  <p class="sec-lab">FAQ</p>
+  <h2>자주 묻는 질문</h2>
+  <div class="faq" style="text-align:left;margin-top:34px">
+    <div class="fq"><h3>개발자가 없어도 되나요?</h3><p>네. 자료를 보내주시면 학습과 검수까지 저희가 합니다. 설치가 어려우시면 대행해 드립니다.</p></div>
+    <div class="fq"><h3>엉뚱한 답을 하면요?</h3><p>근거를 찾지 못하면 답하지 않고 담당자에게 넘깁니다. 오답보다 연결이 안전하다고 봅니다.</p></div>
+    <div class="fq"><h3>카페24 쇼핑몰에도 되나요?</h3><p>가능합니다. 상품 정보를 학습시키면 재고·배송·교환 문의까지 답합니다.</p></div>
+    <div class="fq"><h3>가입은 어떻게 하나요?</h3><p>카카오·네이버 간편 로그인 또는 이메일 인증 가입을 지원합니다. 상담창에서 바로 하실 수 있습니다.</p></div>
+    <div class="fq"><h3>자료가 유출되지 않나요?</h3><p>고객사별로 저장 공간과 권한을 분리합니다. 요청하시면 삭제 후 확인서를 드립니다.</p></div>
+    <div class="fq"><h3>결제와 세금계산서는요?</h3><p>카페24 스토어에서 처리됩니다. 카드·계좌이체가 되고 세금계산서를 발행합니다.</p></div>
+  </div>
+</div></section>
+
+<section class="band"><div class="w">
+  <h2>먼저 물어보세요</h2>
+  <p>지금 이 화면의 챗봇이 저희 제품입니다. 가격·설치·분양 조건까지 바로 답해 드립니다.</p>
+  <button class="btn b-pri b-lg" onclick="openChat()">AI 상담 시작하기</button>
+</div></section>
+
+<section id="contact"><div class="w center">
+  <p class="sec-lab">CONTACT</p>
   <h2>사람이 직접 받습니다</h2>
-  <p class="lede">챗봇으로 먼저 물어보시고, 계약이나 견적처럼 확답이 필요한 내용은 아래로 연락 주세요.</p>
-  <div class="cc">
-    <div><div class="k">전화 문의</div><div class="v"><a href="tel:{COMPANY["phone"]}">{COMPANY["phone"]}</a></div><p style="font-size:13.5px;color:#6A6E73;margin:6px 0 0">{COMPANY["hours"]}</p></div>
-    <div><div class="k">메일 문의</div><div class="v"><a href="mailto:{COMPANY["email"]}">{COMPANY["email"]}</a></div><p style="font-size:13.5px;color:#6A6E73;margin:6px 0 0">업체명·담당자·연락처를 함께 보내주세요</p></div>
-    <div><div class="k">구매</div><div class="v"><a href="{CAFE24_URL}" target="_blank" rel="noopener">카페24 스토어</a></div><p style="font-size:13.5px;color:#6A6E73;margin:6px 0 0">결제와 세금계산서 발행</p></div>
+  <p class="lede">계약이나 견적처럼 확답이 필요한 내용은 아래로 연락 주세요.</p>
+  <div class="cc" style="text-align:left">
+    <div class="b"><div class="k">전화 문의</div><div class="v"><a href="tel:{COMPANY["phone"]}">{COMPANY["phone"]}</a></div><p>{COMPANY["hours"]}</p></div>
+    <div class="b"><div class="k">메일 문의</div><div class="v"><a href="mailto:{COMPANY["email"]}">{COMPANY["email"]}</a></div><p>영업일 기준 1일 내 회신</p></div>
+    <div class="b"><div class="k">구매</div><div class="v"><a href="{CAFE24_URL}" target="_blank" rel="noopener">카페24 스토어</a></div><p>결제·세금계산서 발행</p></div>
   </div>
 </div></section>
 
 <footer><div class="w">
-  <div style="color:#fff;font-weight:700;letter-spacing:.12em">BSM<span style="color:#D68189">.</span>AI</div>
-  <div>기업용 하이브리드 RAG 챗봇 · 전화 {COMPANY["phone"]} · 메일 <a href="mailto:{COMPANY["email"]}">{COMPANY["email"]}</a></div>
+  <div class="top">AI<span style="color:#D68189">노마드</span>챗봇</div>
+  <div>기업용 하이브리드 RAG 상담 챗봇 · 전화 {COMPANY["phone"]} · 메일 <a href="mailto:{COMPANY["email"]}">{COMPANY["email"]}</a></div>
   <div style="margin-top:8px">챗봇 답변은 AI가 생성하며 계약의 효력을 갖지 않습니다.</div>
   <!-- 오픈 전 필수: 상호 · 대표자 · 사업자등록번호 · 통신판매업 신고번호 · 주소를 여기에 표기하세요 -->
 </div></footer>
 
-<script src="/widget.js" data-tenant="{BSM_TENANT}"></script>
+<script src="/widget.js" data-tenant="{BSM_TENANT}" data-mode="center"></script>
+<script>
+function openChat(){{
+  if (window.BSMChat) window.BSMChat.open();
+  else setTimeout(function(){{ window.BSMChat && window.BSMChat.open(); }}, 400);
+}}
+</script>
 </body></html>''')
 
 # ── firebase.json ────────────────────────────────────────────────
