@@ -174,11 +174,84 @@ code(r"""
   bigquery.googleapis.com \
   firestore.googleapis.com \
   identitytoolkit.googleapis.com \
+  firebase.googleapis.com \
+  firebasehosting.googleapis.com \
+  iam.googleapis.com \
   run.googleapis.com \
   cloudbuild.googleapis.com \
   artifactregistry.googleapis.com \
   -q
 print("API 활성화 완료")
+""")
+
+md("""
+## 3-1. Firebase CLI 실행 준비 (브라우저 로그인 없이)
+
+`firebase login --no-localhost` 는 Colab 같은 헤드리스 환경에서 **Google 오류 페이지(400/401)** 를 자주 냅니다.
+Google이 브라우저 밖 인증(OOB) 방식을 닫았기 때문이며, 재시도해도 해결되지 않습니다.
+
+그래서 이 노트북은 로그인 대신 **배포 전용 서비스 계정**을 씁니다.
+명령을 실행할 때만 키를 발급하고, 끝나면 **로컬 파일과 IAM 양쪽에서 즉시 폐기**합니다.
+
+> 이 단계 전에 프로젝트가 **Firebase 프로젝트로 등록**되어 있어야 합니다.
+> [console.firebase.google.com](https://console.firebase.google.com) → 프로젝트 추가 →
+> **기존 Google Cloud 프로젝트 선택** 에서 `aichat-507914` 를 고르면 됩니다. 요금제는 그대로 두셔도 됩니다.
+""")
+
+code(r"""
+import subprocess, json as _json, os
+
+DEPLOY_SA = f"bsm-deployer@{PROJECT_ID}.iam.gserviceaccount.com"
+
+def _ensure_sa():
+    r = subprocess.run(["gcloud","iam","service-accounts","describe",DEPLOY_SA,
+                        "--project",PROJECT_ID], capture_output=True)
+    if r.returncode != 0:
+        subprocess.run(["gcloud","iam","service-accounts","create","bsm-deployer",
+                        "--display-name=BSM Hosting Deployer","--project",PROJECT_ID,"-q"],
+                       capture_output=True)
+        for role in ["roles/firebasehosting.admin","roles/firebase.admin",
+                     "roles/serviceusage.serviceUsageConsumer"]:
+            subprocess.run(["gcloud","projects","add-iam-policy-binding",PROJECT_ID,
+                            "--member=serviceAccount:"+DEPLOY_SA,"--role="+role,"-q"],
+                           capture_output=True)
+        print("배포 전용 서비스 계정 생성:", DEPLOY_SA)
+        import time as _t; _t.sleep(8)   # IAM 반영 대기
+
+def fb(args, cwd="/content"):
+    # firebase CLI 를 서비스 계정 키로 1회 실행하고 키를 즉시 폐기합니다.
+    _ensure_sa()
+    key = "/content/.fbkey.json"
+    subprocess.run(["gcloud","iam","service-accounts","keys","create",key,
+                    "--iam-account",DEPLOY_SA,"--project",PROJECT_ID,"-q"], capture_output=True)
+    if not os.path.exists(key):
+        print("키 발급 실패 — 조직 정책이 서비스 계정 키를 막고 있을 수 있습니다.")
+        print("그 경우 Firebase Hosting 대신 Cloud Run 정적 서빙을 쓰거나 로컬 PC에서 배포하세요.")
+        return 1
+    env = dict(os.environ, GOOGLE_APPLICATION_CREDENTIALS=key)
+    try:
+        r = subprocess.run(["firebase"] + args + ["--project", PROJECT_ID, "--non-interactive"],
+                           cwd=cwd, env=env, capture_output=True, text=True)
+        print(r.stdout[-4000:] or "")
+        if r.returncode != 0:
+            print("[오류]", (r.stderr or "")[-2000:])
+        return r.returncode
+    finally:
+        try:
+            kid = _json.load(open(key))["private_key_id"]
+            subprocess.run(["gcloud","iam","service-accounts","keys","delete",kid,
+                            "--iam-account",DEPLOY_SA,"--project",PROJECT_ID,"-q"],
+                           capture_output=True)
+        except Exception:
+            pass
+        if os.path.exists(key):
+            os.remove(key)
+
+!npm -q install -g firebase-tools 2>/dev/null | tail -1
+ver = !firebase --version
+print("firebase-tools:", (ver[-1] if ver else "설치 실패"))
+print("배포 계정:", DEPLOY_SA)
+print("이제 fb([...]) 로 firebase 명령을 실행합니다. 브라우저 로그인은 필요 없습니다.")
 """)
 
 md("""
@@ -389,16 +462,39 @@ Google Cloud Identity Platform과 Firebase Authentication은 같은 백엔드(Id
 """)
 
 code(r"""
-# 웹 앱 설정을 자동으로 가져옵니다. 실패하면 콘솔에서 직접 복사해 2단계에 붙여넣으세요.
-!npm -q install -g firebase-tools 2>/dev/null | tail -1
-cfg = !firebase apps:sdkconfig WEB --project {PROJECT_ID} --json 2>/dev/null
-try:
-    import json as _j
-    sdk = _j.loads("".join(cfg))["result"]["sdkConfig"]
+# 3-1단계의 fb() 를 사용합니다. 브라우저 로그인은 필요 없습니다.
+import subprocess, json as _j, os
+
+def _sdkconfig():
+    key = "/content/.fbkey.json"
+    _ensure_sa()
+    subprocess.run(["gcloud","iam","service-accounts","keys","create",key,
+                    "--iam-account",DEPLOY_SA,"--project",PROJECT_ID,"-q"], capture_output=True)
+    if not os.path.exists(key):
+        return None
+    try:
+        r = subprocess.run(["firebase","apps:sdkconfig","WEB","--project",PROJECT_ID,"--json"],
+                           env=dict(os.environ, GOOGLE_APPLICATION_CREDENTIALS=key),
+                           capture_output=True, text=True)
+        return _j.loads(r.stdout)["result"]["sdkConfig"]
+    except Exception:
+        return None
+    finally:
+        try:
+            kid = _j.load(open(key))["private_key_id"]
+            subprocess.run(["gcloud","iam","service-accounts","keys","delete",kid,
+                            "--iam-account",DEPLOY_SA,"--project",PROJECT_ID,"-q"], capture_output=True)
+        except Exception:
+            pass
+        if os.path.exists(key):
+            os.remove(key)
+
+sdk = _sdkconfig()
+if sdk:
     print("apiKey     :", sdk.get("apiKey"))
     print("authDomain :", sdk.get("authDomain"))
     print("\n위 apiKey 를 2단계 FIREBASE_API_KEY 에 넣고 그 셀을 다시 실행하세요.")
-except Exception:
+else:
     print("자동 조회 실패 — Firebase 콘솔 > 프로젝트 설정 > 내 앱 > 웹 앱에서 apiKey 를 복사하세요.")
     print("웹 앱이 없다면 콘솔에서 '앱 추가 > 웹'으로 하나 만들면 됩니다.")
 
@@ -2284,22 +2380,23 @@ print("  firebase.json")
 """)
 
 code(r"""
-# Firebase Hosting 배포.
-# 로그인은 브라우저 인증이 필요합니다. --no-localhost 옵션이 출력하는 URL을 열어
-# 코드를 복사해 붙여넣으면 됩니다.
-!npm -q install -g firebase-tools 2>/dev/null | tail -1
+# Firebase Hosting 배포. 3-1단계의 fb() 를 쓰므로 브라우저 로그인이 필요 없습니다.
+rc = fb(["deploy", "--only", "hosting"])
 
-print("\n[1] 로그인 — 아래 출력되는 URL을 열어 인증 코드를 붙여넣으세요")
-!cd /content && firebase login --no-localhost
-
-print("\n[2] 배포")
-!cd /content && firebase deploy --only hosting --project {PROJECT_ID}
-
-print("\\n배포가 끝나면 다음 주소로 접속됩니다:")
-print("  https://" + PROJECT_ID + ".web.app")
-print("")
-print("커스텀 도메인(" + SITE_DOMAIN + ")은 Firebase 콘솔 > Hosting > 커스텀 도메인 추가에서")
-print("DNS 레코드를 등록하면 연결됩니다. 인증서는 자동 발급됩니다.")
+if rc == 0:
+    print("\n배포 완료. 아래 주소로 접속됩니다.")
+    print("  https://" + PROJECT_ID + ".web.app")
+    print("")
+    print("커스텀 도메인(" + SITE_DOMAIN + ")은 Firebase 콘솔 > Hosting > 커스텀 도메인 추가에서")
+    print("DNS 레코드를 등록하면 연결됩니다. 인증서는 자동 발급됩니다.")
+else:
+    print("\n배포 실패. 아래를 순서대로 확인하세요.")
+    print("  1. 프로젝트가 Firebase 프로젝트로 등록되어 있는지 (console.firebase.google.com)")
+    print("  2. Hosting 이 활성화되어 있는지 (콘솔 > Hosting > 시작하기)")
+    print("  3. 조직 정책이 서비스 계정 키 생성을 막고 있지 않은지")
+    print("")
+    print("세 번째가 원인이면 Firebase Hosting 대신 Cloud Run 으로 정적 파일을 서빙하거나,")
+    print("로컬 PC에서 firebase login 후 public 폴더를 배포하시면 됩니다.")
 """)
 
 md("""
