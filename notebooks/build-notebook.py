@@ -228,6 +228,27 @@ CREATE TABLE IF NOT EXISTS `{DS}.leads` (
 )
 PARTITION BY DATE(created_at);
 
+CREATE TABLE IF NOT EXISTS `{DS}.members` (
+  member_id STRING, provider STRING, provider_uid STRING,
+  email STRING, name STRING, company STRING, phone STRING,
+  created_at TIMESTAMP, last_login_at TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS `{DS}.inquiries` (
+  inquiry_id STRING, member_id STRING, tenant_id STRING,
+  category STRING, title STRING, body STRING,
+  company_name STRING, phone STRING, contact_email STRING,
+  channel STRING, status STRING, created_at TIMESTAMP
+)
+PARTITION BY DATE(created_at);
+
+CREATE TABLE IF NOT EXISTS `{DS}.escalations` (
+  esc_id STRING, tenant_id STRING, session_id STRING,
+  question STRING, summary STRING, contact_email STRING, memo STRING,
+  email_sent BOOL, email_error STRING, status STRING, created_at TIMESTAMP
+)
+PARTITION BY DATE(created_at);
+
 CREATE TABLE IF NOT EXISTS `{DS}.golden_set` (
   gs_id STRING, tenant_id STRING, question STRING,
   expect_keywords ARRAY<STRING>, note STRING
@@ -294,6 +315,106 @@ for code_, p in PLANS.items():
     print(f"  {p['name']:<8} {p['price']:>7,}원/월  해결 {p['resolutions']:>5,}건  문서 {p['pages']:>5,}p  {p['note']}")
 print(f"\n  초과 해결당 {COMPANY['overage_per_resolution']}원 · 연납 {COMPANY['year_discount_months']}개월 할인")
 print(f"  무료 체험 {COMPANY['trial_days']}일 · 분양비 {COMPANY['franchise_fee']:,}원")
+""")
+
+md("""
+## 5-1. 상담 시나리오 저장
+
+해피톡처럼 버튼으로 시작해 자유 대화로 넘어가는 구조입니다.
+시나리오를 코드가 아니라 Firestore에 두면 문구를 바꿀 때 재배포가 필요 없습니다.
+""")
+
+code(r"""
+FLOW = {
+  "home": {
+    "text": ("안녕하세요. BSM AI 상담 챗봇입니다.\n"
+             "홈페이지와 카카오톡 등 여러 채널의 고객 문의를 AI가 대신 답하도록 만들어 드립니다.\n\n"
+             "원하시는 항목을 선택해 주세요."),
+    "buttons": [
+      {"label": "신규 도입 문의",   "next": "intro"},
+      {"label": "가격 · 견적 문의", "next": "price"},
+      {"label": "상담 시작하기",    "next": "free", "style": "pri"},
+    ],
+  },
+  "intro": {
+    "text": "어떤 것을 만들고 싶으신지 알려주시면 바로 상담해 드립니다.",
+    "buttons": [
+      {"label": "쇼핑몰 주문·배송 문의를 자동으로 답하게 하고 싶어요", "ask": True},
+      {"label": "사내 규정 PDF를 직원이 물어보게 하고 싶어요",         "ask": True},
+      {"label": "홈페이지에 24시간 상담 챗봇을 붙이고 싶어요",         "ask": True},
+      {"label": "직접 입력할게요", "next": "free", "style": "pri"},
+    ],
+  },
+  "price": {
+    "text": ("가격과 견적은 회원 확인 후 안내해 드립니다.\n"
+             "카카오 또는 네이버 계정으로 간편하게 시작하실 수 있습니다."),
+    "require_login": True,
+  },
+  "free": {
+    "text": ("만들고 싶으신 내용을 편하게 적어주세요.\n"
+             "제가 아는 범위는 바로 답해 드리고, 어려운 내용은 담당자에게 전달해 회신해 드립니다."),
+    "free_input": True,
+  },
+}
+
+fs.collection("flows").document("main").set({
+    "nodes": FLOW, "updated_at": firestore.SERVER_TIMESTAMP})
+
+print("상담 시나리오 저장 완료")
+for k, v in FLOW.items():
+    n = len(v.get("buttons", []))
+    print(f"  {k:<8} 버튼 {n}개  {v['text'][:34]}...")
+""")
+
+md("""
+## 5-2. 시크릿 등록
+
+소셜 로그인 키와 메일 발송 계정은 노트북에 남기지 않고 Secret Manager에 넣습니다.
+아래 셀은 입력값을 화면에 표시하지 않으며, 노트북을 공유해도 키가 새지 않습니다.
+
+- **카카오** — [developers.kakao.com](https://developers.kakao.com) 내 애플리케이션 > 앱 키의 REST API 키와 보안의 Client Secret
+- **네이버** — [developers.naver.com](https://developers.naver.com) 애플리케이션 등록 후 Client ID / Secret
+- **메일** — Gmail 계정과 앱 비밀번호(2단계 인증 후 발급). 다른 SMTP를 쓰셔도 됩니다.
+
+두 서비스 모두 **Redirect URI**를 등록해야 합니다. Cloud Run 배포 후 출력되는 주소로
+`https://<API 주소>/auth/kakao/callback`, `https://<API 주소>/auth/naver/callback` 를 등록하세요.
+""")
+
+code(r"""
+from getpass import getpass
+import secrets as _secrets
+
+!gcloud services enable secretmanager.googleapis.com -q
+
+def put_secret(name, value):
+    if not value:
+        print(f"  {name}: 건너뜀 (빈 값)")
+        return
+    import subprocess
+    subprocess.run(["gcloud", "secrets", "create", name, "--replication-policy=automatic", "-q"],
+                   capture_output=True)
+    r = subprocess.run(["gcloud", "secrets", "versions", "add", name, "--data-file=-"],
+                       input=value.encode(), capture_output=True)
+    print(f"  {name}: {'저장됨' if r.returncode == 0 else '실패 ' + r.stderr.decode()[:80]}")
+
+print("입력하지 않고 엔터를 누르면 해당 항목은 건너뜁니다.\n")
+put_secret("SESSION_SECRET",      _secrets.token_urlsafe(32))
+put_secret("KAKAO_CLIENT_ID",     getpass("카카오 REST API 키: "))
+put_secret("KAKAO_CLIENT_SECRET", getpass("카카오 Client Secret: "))
+put_secret("NAVER_CLIENT_ID",     getpass("네이버 Client ID: "))
+put_secret("NAVER_CLIENT_SECRET", getpass("네이버 Client Secret: "))
+put_secret("SMTP_USER",           getpass("메일 발송 계정(예: bsm@gmail.com): "))
+put_secret("SMTP_PASS",           getpass("메일 앱 비밀번호: "))
+
+# Cloud Run 서비스 계정에 시크릿 접근 권한 부여
+PROJNUM = !gcloud projects describe {PROJECT_ID} --format="value(projectNumber)"
+PROJNUM = PROJNUM[0].strip()
+SA = f"{PROJNUM}-compute@developer.gserviceaccount.com"
+for name in ["SESSION_SECRET","KAKAO_CLIENT_ID","KAKAO_CLIENT_SECRET",
+             "NAVER_CLIENT_ID","NAVER_CLIENT_SECRET","SMTP_USER","SMTP_PASS"]:
+    !gcloud secrets add-iam-policy-binding {name} \
+      --member=serviceAccount:{SA} --role=roles/secretmanager.secretAccessor -q > /dev/null 2>&1
+print(f"\n시크릿 접근 권한 부여: {SA}")
 """)
 
 md("""
@@ -832,6 +953,7 @@ code(r"""
 from pathlib import Path
 
 APP = Path("/content/bsm_api"); APP.mkdir(parents=True, exist_ok=True)
+MAIL_TO = COMPANY["email"]
 
 (APP / "requirements.txt").write_text('''fastapi==0.115.6
 uvicorn[standard]==0.34.0
@@ -839,65 +961,122 @@ google-cloud-bigquery==3.27.0
 google-cloud-firestore==2.19.0
 google-genai==1.2.0
 pydantic==2.10.4
+requests==2.32.3
 ''')
 
+(APP / "search.sql").write_text(SEARCH_SQL)
+
 (APP / "main.py").write_text(f'''
-import os, re, json, time, uuid, datetime as dt
-from typing import List, Optional
+import os, re, json, time, uuid, hmac, hashlib, base64, smtplib, datetime as dt
+from email.message import EmailMessage
+from typing import List, Optional, Dict, Any
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import requests
 from google.cloud import bigquery, firestore
 from google import genai
 from google.genai import types as gt
 
-PROJECT   = os.environ["PROJECT_ID"]
-DATASET   = os.environ.get("DATASET", "{DATASET}")
-VERTEX_LOC= os.environ.get("VERTEX_LOC", "{VERTEX_LOC}")
-GEN_MODEL = os.environ.get("GEN_MODEL", "{GEN_MODEL}")
-EMB_MODEL = os.environ.get("EMBED_MODEL", "{EMBED_MODEL}")
-EMB_DIM   = int(os.environ.get("EMBED_DIM", "{EMBED_DIM}"))
-ALLOW     = [o for o in os.environ.get("ALLOW_ORIGINS", "*").split(",") if o]
-MIN_RRF   = float(os.environ.get("MIN_RRF", "{MIN_RRF}"))
-DS        = PROJECT + "." + DATASET
+PROJECT    = os.environ["PROJECT_ID"]
+DATASET    = os.environ.get("DATASET", "{DATASET}")
+VERTEX_LOC = os.environ.get("VERTEX_LOC", "{VERTEX_LOC}")
+GEN_MODEL  = os.environ.get("GEN_MODEL", "{GEN_MODEL}")
+EMB_MODEL  = os.environ.get("EMBED_MODEL", "{EMBED_MODEL}")
+EMB_DIM    = int(os.environ.get("EMBED_DIM", "{EMBED_DIM}"))
+MIN_RRF    = float(os.environ.get("MIN_RRF", "{MIN_RRF}"))
+SITE       = os.environ.get("SITE_DOMAIN", "{SITE_DOMAIN}")
+ALLOW      = [o for o in os.environ.get("ALLOW_ORIGINS", "*").split(",") if o]
+DS         = PROJECT + "." + DATASET
+
+# 시크릿 (Secret Manager 로 주입)
+SESSION_SECRET = os.environ.get("SESSION_SECRET", "dev-only-not-secure")
+KAKAO_ID       = os.environ.get("KAKAO_CLIENT_ID", "")
+KAKAO_SECRET   = os.environ.get("KAKAO_CLIENT_SECRET", "")
+NAVER_ID       = os.environ.get("NAVER_CLIENT_ID", "")
+NAVER_SECRET   = os.environ.get("NAVER_CLIENT_SECRET", "")
+SMTP_HOST      = os.environ.get("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT      = int(os.environ.get("SMTP_PORT", "465"))
+SMTP_USER      = os.environ.get("SMTP_USER", "")
+SMTP_PASS      = os.environ.get("SMTP_PASS", "")
 
 bq = bigquery.Client(project=PROJECT)
 fs = firestore.Client(project=PROJECT)
 gc = genai.Client(vertexai=True, project=PROJECT, location=VERTEX_LOC)
 
-_cfg_cache = {{"at": 0.0, "val": None}}
-def company():
-    if time.time() - _cfg_cache["at"] > 300 or _cfg_cache["val"] is None:
-        _cfg_cache["val"] = fs.collection("company").document("bsm").get().to_dict() or {{}}
-        _cfg_cache["at"] = time.time()
-    return _cfg_cache["val"]
-
-app = FastAPI(title="BSM AI API")
-app.add_middleware(CORSMiddleware, allow_origins=ALLOW or ["*"],
-                   allow_methods=["POST", "GET"], allow_headers=["*"])
-
-class ChatIn(BaseModel):
-    tenant_id: str = "{BSM_TENANT}"
-    question: str
-    session_id: Optional[str] = None
-
-class ChatOut(BaseModel):
-    answer: str
-    sources: List[str] = []
-    action: str = "NONE"
-    grounded: bool = False
-
-class LeadIn(BaseModel):
-    company: str
-    contact_name: str = ""
-    phone: str = ""
-    email: str = ""
-    homepage: str = ""
-    memo: str = ""
-    source: str = "site"
-
 SEARCH_SQL = open(os.path.join(os.path.dirname(__file__), "search.sql"), encoding="utf-8").read()
 
+_cache: Dict[str, Any] = {{}}
+def cached(key, ttl, loader):
+    e = _cache.get(key)
+    if e and time.time() - e[0] < ttl:
+        return e[1]
+    v = loader()
+    _cache[key] = (time.time(), v)
+    return v
+
+def company():
+    return cached("company", 300,
+        lambda: fs.collection("company").document("bsm").get().to_dict() or {{}})
+
+def flow():
+    return cached("flow", 60,
+        lambda: (fs.collection("flows").document("main").get().to_dict() or {{}}).get("nodes", {{}}))
+
+def mail_to():
+    return company().get("email", "{MAIL_TO}")
+
+def now_iso():
+    return dt.datetime.now(dt.timezone.utc).isoformat()
+
+# ── 세션 토큰: HMAC 서명 문자열. 별도 저장소가 필요 없습니다. ──
+def sign(payload: str, ttl_sec: int = 60 * 60 * 24 * 14) -> str:
+    exp = str(int(time.time()) + ttl_sec)
+    raw = payload + "|" + exp
+    sig = hmac.new(SESSION_SECRET.encode(), raw.encode(), hashlib.sha256).hexdigest()[:32]
+    return base64.urlsafe_b64encode((raw + "|" + sig).encode()).decode().rstrip("=")
+
+def verify(token: str) -> Optional[str]:
+    try:
+        pad = "=" * (-len(token) % 4)
+        raw = base64.urlsafe_b64decode(token + pad).decode()
+        payload, exp, sig = raw.rsplit("|", 2)
+        good = hmac.new(SESSION_SECRET.encode(), (payload + "|" + exp).encode(),
+                        hashlib.sha256).hexdigest()[:32]
+        if not hmac.compare_digest(sig, good):
+            return None
+        if int(exp) < time.time():
+            return None
+        return payload
+    except Exception:
+        return None
+
+def bearer(auth: Optional[str]) -> Optional[str]:
+    if not auth or not auth.lower().startswith("bearer "):
+        return None
+    return verify(auth.split(" ", 1)[1].strip())
+
+# ── 메일 발송 ────────────────────────────────────────────────
+def send_mail(subject: str, body: str, reply_to: str = "") -> Dict[str, Any]:
+    if not (SMTP_USER and SMTP_PASS):
+        return {{"sent": False, "error": "SMTP 미설정"}}
+    try:
+        msg = EmailMessage()
+        msg["Subject"] = subject
+        msg["From"] = SMTP_USER
+        msg["To"] = mail_to()
+        if reply_to:
+            msg["Reply-To"] = reply_to
+        msg.set_content(body)
+        with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+            s.login(SMTP_USER, SMTP_PASS)
+            s.send_message(msg)
+        return {{"sent": True, "error": ""}}
+    except Exception as e:
+        return {{"sent": False, "error": type(e).__name__ + ": " + str(e)[:200]}}
+
+# ── 검색 ─────────────────────────────────────────────────────
 def terms(q):
     out = []
     for w in re.findall(r"[0-9A-Za-z가-힣]+", q):
@@ -917,96 +1096,350 @@ def embed_query(q):
         config=gt.EmbedContentConfig(task_type="RETRIEVAL_QUERY", output_dimensionality=EMB_DIM))
     return list(r.embeddings[0].values)
 
+def retrieve(tenant_id, q):
+    cfg = bigquery.QueryJobConfig(query_parameters=[
+        bigquery.ArrayQueryParameter("qvec", "FLOAT64", embed_query(q)),
+        bigquery.ArrayQueryParameter("terms", "STRING", terms(q) or [q]),
+        bigquery.ScalarQueryParameter("tenant", "STRING", tenant_id),
+        bigquery.ScalarQueryParameter("topk", "INT64", 20),
+        bigquery.ScalarQueryParameter("final_k", "INT64", 5)])
+    return [dict(r) for r in bq.query(SEARCH_SQL, job_config=cfg).result()]
+
 def system_prompt():
     c = company()
     return (
       "당신은 BSM의 상담 도우미입니다. 아래 [근거]에 있는 내용만 사용해 한국어 존댓말로 답하세요.\\n"
       "규칙\\n"
-      "- 3~5문장으로 짧게 답합니다. 목록이 필요하면 '- '를 씁니다. 이모지는 쓰지 않습니다.\\n"
-      "- [근거]에 없는 숫자나 조건을 지어내지 마세요. 없으면 grounded를 false로 두세요.\\n"
-      "- 계약 조항, 세무·법률 판단, 특정 권역의 잔여 구좌는 상담 연결로 안내하세요.\\n"
-      "- 상대가 채팅에 개인정보를 적으려 하면 전화나 메일로 달라고 안내하세요.\\n"
-      "- 답변 끝에 다음 단계를 한 문장으로 제안하세요.\\n"
+      "- 3~5문장으로 짧게 답합니다. 목록이 필요하면 - 를 씁니다. 이모지는 쓰지 않습니다.\\n"
+      "- [근거]에 없는 숫자나 조건을 지어내지 마세요. 없으면 grounded 를 false 로 두세요.\\n"
+      "- 고객이 만들고 싶어 하는 것을 구체적으로 되물어 요구사항을 좁히세요.\\n"
+      "- 개인정보는 채팅에 적지 말고 담당자에게 전달하라고 안내하세요.\\n"
       "문의처: 전화 " + str(c.get("phone", "")) + ", 메일 " + str(c.get("email", "")) + "\\n"
-      "action 값: BUY(구매 의사) TRIAL(무료 체험 권유) CONTACT(맞춤·분양·확답 필요) NONE(일반 안내)\\n"
+      "action 값: BUY(구매 의사) TRIAL(무료 시작) PRICE(가격·견적 문의) CONTACT(상담 연결) NONE(일반 안내)\\n"
       "반드시 다음 JSON만 출력하세요.\\n"
-      '{{"answer": "답변 본문", "grounded": true, "action": "BUY|TRIAL|CONTACT|NONE"}}'
+      '{{"answer": "답변 본문", "grounded": true, "action": "BUY|TRIAL|PRICE|CONTACT|NONE"}}'
     )
 
-def fallback():
-    c = company()
-    return ("제가 가진 자료로는 정확히 답변드리기 어렵습니다.\\n전화 "
-            + str(c.get("phone", "")) + " 또는 메일 " + str(c.get("email", ""))
-            + "로 문의해 주시면 담당자가 정확히 안내해 드리겠습니다.")
+# ── 앱 ───────────────────────────────────────────────────────
+app = FastAPI(title="BSM AI API")
+app.add_middleware(CORSMiddleware, allow_origins=ALLOW or ["*"],
+                   allow_methods=["POST", "GET"], allow_headers=["*"])
+
+class Turn(BaseModel):
+    role: str
+    content: str
+
+class ChatIn(BaseModel):
+    tenant_id: str = "{BSM_TENANT}"
+    question: str
+    session_id: Optional[str] = None
+    history: List[Turn] = []
+
+class ChatOut(BaseModel):
+    answer: str
+    sources: List[str] = []
+    action: str = "NONE"
+    grounded: bool = False
+    escalate: bool = False
+
+class EscIn(BaseModel):
+    session_id: Optional[str] = None
+    question: str
+    contact_email: str
+    memo: str = ""
+    history: List[Turn] = []
+
+class InquiryIn(BaseModel):
+    category: str = "PRICE"
+    title: str = ""
+    body: str = ""
+    company_name: str = ""
+    phone: str = ""
+    channel: str = "web"
 
 @app.get("/health")
 def health():
-    return {{"ok": True, "model": GEN_MODEL, "ts": dt.datetime.utcnow().isoformat()}}
+    return {{"ok": True, "model": GEN_MODEL, "ts": now_iso()}}
+
+@app.get("/flow")
+def get_flow():
+    return {{"nodes": flow()}}
 
 @app.post("/chat", response_model=ChatOut)
 def chat(inp: ChatIn):
     t0 = time.time()
     q = (inp.question or "").strip()[:500]
     if not q:
-        return ChatOut(answer=fallback(), action="CONTACT")
+        return ChatOut(answer="무엇을 도와드릴까요?", action="NONE")
 
-    cfg = bigquery.QueryJobConfig(query_parameters=[
-        bigquery.ArrayQueryParameter("qvec", "FLOAT64", embed_query(q)),
-        bigquery.ArrayQueryParameter("terms", "STRING", terms(q) or [q]),
-        bigquery.ScalarQueryParameter("tenant", "STRING", inp.tenant_id),
-        bigquery.ScalarQueryParameter("topk", "INT64", 20),
-        bigquery.ScalarQueryParameter("final_k", "INT64", 5)])
-    hits = [dict(r) for r in bq.query(SEARCH_SQL, job_config=cfg).result()]
+    hits = retrieve(inp.tenant_id, q)
     top = hits[0]["rrf"] if hits else 0.0
+    c = company()
 
     if not hits or top < MIN_RRF:
-        out = ChatOut(answer=fallback(), action="CONTACT", grounded=False)
+        # 근거 없음 → 모델을 부르지 않고 담당자 전달 흐름으로 넘깁니다.
+        out = ChatOut(
+            answer=("제가 가진 자료로는 정확히 답변드리기 어려운 내용입니다.\\n"
+                    "문의 내용을 정리해 담당자에게 전달해 드릴까요? "
+                    "회신받으실 이메일 주소를 알려주시면 " + str(c.get("email", "")) +
+                    " 담당자가 확인 후 답변드립니다."),
+            action="CONTACT", grounded=False, escalate=True)
     else:
-        ctx = "\\n\\n".join("[" + str(i+1) + "] " + h["title"] + "\\n" + h["content"]
-                            for i, h in enumerate(hits))
+        ctx = "\\n\\n".join("[" + str(i + 1) + "] " + h["title"] + "\\n" + h["content"]
+                           for i, h in enumerate(hits))
+        convo = ""
+        for t in inp.history[-6:]:
+            convo += ("고객: " if t.role == "user" else "상담: ") + t.content[:300] + "\\n"
         try:
             r = gc.models.generate_content(
-                model=GEN_MODEL, contents="[근거]\\n" + ctx + "\\n\\n[질문]\\n" + q,
+                model=GEN_MODEL,
+                contents="[근거]\\n" + ctx + "\\n\\n[이전 대화]\\n" + convo + "\\n[질문]\\n" + q,
                 config=gt.GenerateContentConfig(system_instruction=system_prompt(),
                     temperature=0.2, max_output_tokens=900,
                     response_mime_type="application/json"))
             d = json.loads(r.text)
             g = bool(d.get("grounded", False))
-            out = ChatOut(answer=d.get("answer", "").strip() if g else fallback(),
+            act = d.get("action", "NONE") if g else "CONTACT"
+            out = ChatOut(answer=d.get("answer", "").strip() if g else
+                          ("제가 가진 자료로는 정확히 답변드리기 어렵습니다. "
+                           "문의 내용을 담당자에게 전달해 드릴까요?"),
                           sources=sorted({{h["title"] for h in hits[:3]}}) if g else [],
-                          action=d.get("action", "NONE") if g else "CONTACT", grounded=g)
+                          action=act, grounded=g, escalate=not g)
         except Exception:
-            out = ChatOut(answer=fallback(), action="CONTACT", grounded=False)
+            out = ChatOut(answer="일시적인 오류가 발생했습니다. 문의 내용을 담당자에게 전달해 드릴까요?",
+                          action="CONTACT", grounded=False, escalate=True)
 
     try:
         bq.insert_rows_json(DS + ".chat_logs", [{{
             "log_id": "L" + uuid.uuid4().hex[:14], "tenant_id": inp.tenant_id,
             "session_id": inp.session_id or "web", "question": q, "answer": out.answer,
             "sources": out.sources, "action": out.action, "grounded": out.grounded,
-            "top_score": float(top), "latency_ms": int((time.time()-t0)*1000),
-            "created_at": dt.datetime.now(dt.timezone.utc).isoformat()}}])
+            "top_score": float(top), "latency_ms": int((time.time() - t0) * 1000),
+            "created_at": now_iso()}}])
     except Exception:
         pass
     return out
+
+@app.post("/escalate")
+def escalate(inp: EscIn):
+    # 챗봇이 답하지 못한 문의를 정리해 담당자 메일로 보냅니다.
+    email = (inp.contact_email or "").strip()
+    if not re.match(r"^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$", email):
+        return {{"ok": False, "error": "이메일 형식이 올바르지 않습니다."}}
+
+    convo = ""
+    for t in inp.history[-12:]:
+        convo += ("고객: " if t.role == "user" else "상담: ") + t.content[:400] + "\\n"
+
+    summary = ""
+    try:
+        r = gc.models.generate_content(
+            model=GEN_MODEL,
+            contents=("아래 상담 대화를 담당자가 5초 안에 파악할 수 있게 정리하세요.\\n\\n"
+                      "[대화]\\n" + convo + "\\n[마지막 질문]\\n" + inp.question +
+                      "\\n[고객 메모]\\n" + (inp.memo or "없음")),
+            config=gt.GenerateContentConfig(
+                system_instruction=(
+                  "한국어로 다음 네 항목만 출력하세요. 각 항목은 한두 문장입니다.\\n"
+                  "1. 문의 요약\\n2. 고객이 만들려는 것\\n3. 회신에 필요한 정보\\n4. 예상 응대 방향\\n"
+                  "추측은 쓰지 말고 대화에 나온 내용만 쓰세요."),
+                temperature=0.2, max_output_tokens=600))
+        summary = (r.text or "").strip()
+    except Exception as e:
+        summary = "(요약 생성 실패: " + type(e).__name__ + ")"
+
+    esc_id = "E" + uuid.uuid4().hex[:12]
+    body = ("BSM AI 챗봇에서 전달된 문의입니다.\\n\\n"
+            "문의번호: " + esc_id + "\\n"
+            "회신 이메일: " + email + "\\n"
+            "접수 시각: " + now_iso() + "\\n\\n"
+            "── 정리 ──\\n" + summary + "\\n\\n"
+            "── 마지막 질문 ──\\n" + inp.question + "\\n\\n"
+            "── 대화 전문 ──\\n" + (convo or "(없음)"))
+    res = send_mail("[BSM 챗봇 문의] " + inp.question[:40], body, reply_to=email)
+
+    try:
+        bq.insert_rows_json(DS + ".escalations", [{{
+            "esc_id": esc_id, "tenant_id": "{BSM_TENANT}",
+            "session_id": inp.session_id or "web", "question": inp.question,
+            "summary": summary, "contact_email": email, "memo": inp.memo or "",
+            "email_sent": bool(res["sent"]), "email_error": res["error"],
+            "status": "NEW", "created_at": now_iso()}}])
+    except Exception:
+        pass
+
+    return {{"ok": True, "esc_id": esc_id, "email_sent": res["sent"],
+            "message": ("문의를 접수했습니다. " + mail_to() + " 담당자가 확인 후 " +
+                        email + " 으로 회신드립니다. 문의번호는 " + esc_id + " 입니다.")}}
+
+# ── 소셜 로그인 ──────────────────────────────────────────────
+PROVIDERS = {{
+  "kakao": {{
+    "auth": "https://kauth.kakao.com/oauth/authorize",
+    "token": "https://kauth.kakao.com/oauth/token",
+    "me": "https://kapi.kakao.com/v2/user/me",
+    "scope": "profile_nickname,account_email",
+  }},
+  "naver": {{
+    "auth": "https://nid.naver.com/oauth2.0/authorize",
+    "token": "https://nid.naver.com/oauth2.0/token",
+    "me": "https://openapi.naver.com/v1/nid/me",
+    "scope": "",
+  }},
+}}
+
+def creds(p):
+    return (KAKAO_ID, KAKAO_SECRET) if p == "kakao" else (NAVER_ID, NAVER_SECRET)
+
+def redirect_uri(p):
+    base = os.environ.get("API_BASE", "")
+    return base + "/auth/" + p + "/callback"
+
+@app.get("/auth/{{provider}}/login")
+def social_login(provider: str, redirect: str = ""):
+    if provider not in PROVIDERS:
+        return {{"ok": False, "error": "지원하지 않는 로그인입니다."}}
+    cid, _ = creds(provider)
+    if not cid:
+        return {{"ok": False, "error": provider + " 로그인 키가 설정되지 않았습니다."}}
+    P = PROVIDERS[provider]
+    state = sign("rt:" + (redirect or SITE), 600)
+    url = (P["auth"] + "?response_type=code&client_id=" + cid +
+           "&redirect_uri=" + requests.utils.quote(redirect_uri(provider), safe="") +
+           "&state=" + state)
+    if P["scope"]:
+        url += "&scope=" + requests.utils.quote(P["scope"], safe="")
+    return RedirectResponse(url)
+
+@app.get("/auth/{{provider}}/callback")
+def social_callback(provider: str, code: str = "", state: str = ""):
+    if provider not in PROVIDERS:
+        return {{"ok": False, "error": "지원하지 않는 로그인입니다."}}
+    back = verify(state or "")
+    target = back[3:] if back and back.startswith("rt:") else SITE
+    cid, csec = creds(provider)
+    P = PROVIDERS[provider]
+    try:
+        tk = requests.post(P["token"], timeout=15, data={{
+            "grant_type": "authorization_code", "client_id": cid, "client_secret": csec,
+            "redirect_uri": redirect_uri(provider), "code": code, "state": state,
+        }}, headers={{"Content-Type": "application/x-www-form-urlencoded"}}).json()
+        at = tk.get("access_token")
+        if not at:
+            return RedirectResponse(target + "#bsm_login_error=token")
+
+        me = requests.get(P["me"], timeout=15,
+                          headers={{"Authorization": "Bearer " + at}}).json()
+        if provider == "kakao":
+            uid = str(me.get("id", ""))
+            acc = me.get("kakao_account", {{}}) or {{}}
+            email = acc.get("email", "") or ""
+            name = (acc.get("profile", {{}}) or {{}}).get("nickname", "") or ""
+        else:
+            r0 = me.get("response", {{}}) or {{}}
+            uid = str(r0.get("id", ""))
+            email = r0.get("email", "") or ""
+            name = r0.get("name", "") or r0.get("nickname", "") or ""
+        if not uid:
+            return RedirectResponse(target + "#bsm_login_error=profile")
+    except Exception:
+        return RedirectResponse(target + "#bsm_login_error=network")
+
+    member_id = provider + "_" + uid
+    ref = fs.collection("members").document(member_id)
+    snap = ref.get()
+    if not snap.exists:
+        ref.set({{"provider": provider, "provider_uid": uid, "email": email, "name": name,
+                 "created_at": firestore.SERVER_TIMESTAMP,
+                 "last_login_at": firestore.SERVER_TIMESTAMP}})
+        try:
+            bq.insert_rows_json(DS + ".members", [{{
+                "member_id": member_id, "provider": provider, "provider_uid": uid,
+                "email": email, "name": name, "company": "", "phone": "",
+                "created_at": now_iso(), "last_login_at": now_iso()}}])
+        except Exception:
+            pass
+    else:
+        ref.update({{"last_login_at": firestore.SERVER_TIMESTAMP,
+                    "email": email or (snap.to_dict() or {{}}).get("email", "")}})
+
+    return RedirectResponse(target + "#bsm_login=" + sign(member_id))
+
+@app.get("/me")
+def me(authorization: str = ""):
+    mid = bearer(authorization)
+    if not mid:
+        return {{"ok": False}}
+    d = fs.collection("members").document(mid).get().to_dict() or {{}}
+    return {{"ok": True, "member_id": mid, "email": d.get("email", ""),
+            "name": d.get("name", ""), "provider": d.get("provider", "")}}
+
+@app.post("/inquiry")
+def inquiry(inp: InquiryIn, authorization: str = ""):
+    # 가격·견적 문의는 로그인 후에만 접수합니다.
+    mid = bearer(authorization)
+    if not mid:
+        return {{"ok": False, "error": "LOGIN_REQUIRED"}}
+    d = fs.collection("members").document(mid).get().to_dict() or {{}}
+    email = d.get("email", "")
+    iid = "Q" + uuid.uuid4().hex[:12]
+    try:
+        bq.insert_rows_json(DS + ".inquiries", [{{
+            "inquiry_id": iid, "member_id": mid, "tenant_id": "{BSM_TENANT}",
+            "category": inp.category, "title": inp.title[:200], "body": inp.body[:4000],
+            "company_name": inp.company_name[:120], "phone": inp.phone[:40],
+            "contact_email": email, "channel": inp.channel, "status": "NEW",
+            "created_at": now_iso()}}])
+    except Exception as e:
+        return {{"ok": False, "error": "SAVE_FAILED"}}
+
+    body = ("회원 문의가 접수되었습니다.\\n\\n"
+            "문의번호: " + iid + "\\n회원: " + mid + " (" + str(d.get("name", "")) + ")\\n"
+            "이메일: " + email + "\\n회사: " + inp.company_name + "\\n연락처: " + inp.phone + "\\n"
+            "구분: " + inp.category + "\\n제목: " + inp.title + "\\n\\n" + inp.body)
+    res = send_mail("[BSM " + inp.category + " 문의] " + (inp.title or iid)[:40], body, reply_to=email)
+
+    return {{"ok": True, "inquiry_id": iid, "email_sent": res["sent"],
+            "message": ("문의가 접수되었습니다. 문의번호 " + iid + " 로 " +
+                        (email or "등록하신 이메일") + " 에 회신드립니다.")}}
+
+class LeadIn(BaseModel):
+    company: str
+    contact_name: str = ""
+    phone: str = ""
+    email: str = ""
+    homepage: str = ""
+    memo: str = ""
+    source: str = "site"
 
 @app.post("/lead")
 def lead(inp: LeadIn):
     row = inp.model_dump()
     row.update({{"lead_id": "LD" + uuid.uuid4().hex[:12], "tenant_id": "{BSM_TENANT}",
-                "created_at": dt.datetime.now(dt.timezone.utc).isoformat()}})
+                "created_at": now_iso()}})
     bq.insert_rows_json(DS + ".leads", [row])
+    send_mail("[BSM 무료 시작 신청] " + inp.company[:40],
+              json.dumps(row, ensure_ascii=False, indent=2), reply_to=inp.email)
     return {{"ok": True}}
 ''')
 
-(APP / "search.sql").write_text(SEARCH_SQL)
-
 print("앱 파일 생성 완료:", [p.name for p in sorted(APP.iterdir())])
+print("엔드포인트: /chat /escalate /inquiry /auth/{provider}/login /auth/{provider}/callback /me /flow /lead /health")
 """)
 
 code(r"""
 # Cloud Run 배포. 첫 배포는 3~5분 걸립니다.
 # max-instances를 낮게 잡아 비용 폭주를 막습니다.
 ALLOW_ORIGINS = f"{SITE_DOMAIN},https://{PROJECT_ID}.web.app"
+ENVS = (f"PROJECT_ID={PROJECT_ID},DATASET={DATASET},VERTEX_LOC={VERTEX_LOC},"
+        f"GEN_MODEL={GEN_MODEL},EMBED_MODEL={EMBED_MODEL},EMBED_DIM={EMBED_DIM},"
+        f"MIN_RRF={MIN_RRF},SITE_DOMAIN={SITE_DOMAIN},ALLOW_ORIGINS={ALLOW_ORIGINS}")
+SECRETS = ("SESSION_SECRET=SESSION_SECRET:latest,"
+           "KAKAO_CLIENT_ID=KAKAO_CLIENT_ID:latest,"
+           "KAKAO_CLIENT_SECRET=KAKAO_CLIENT_SECRET:latest,"
+           "NAVER_CLIENT_ID=NAVER_CLIENT_ID:latest,"
+           "NAVER_CLIENT_SECRET=NAVER_CLIENT_SECRET:latest,"
+           "SMTP_USER=SMTP_USER:latest,SMTP_PASS=SMTP_PASS:latest")
 
 !gcloud run deploy {SERVICE_NAME} \
   --source /content/bsm_api \
@@ -1014,13 +1447,22 @@ ALLOW_ORIGINS = f"{SITE_DOMAIN},https://{PROJECT_ID}.web.app"
   --allow-unauthenticated \
   --memory 512Mi --cpu 1 \
   --min-instances 0 --max-instances 3 \
-  --concurrency 20 --timeout 60 \
-  --set-env-vars PROJECT_ID={PROJECT_ID},DATASET={DATASET},VERTEX_LOC={VERTEX_LOC},GEN_MODEL={GEN_MODEL},EMBED_MODEL={EMBED_MODEL},EMBED_DIM={EMBED_DIM},MIN_RRF={MIN_RRF},ALLOW_ORIGINS={ALLOW_ORIGINS} \
+  --concurrency 20 --timeout 120 \
+  --set-env-vars {ENVS} \
+  --set-secrets {SECRETS} \
   -q
 
 API_URL = !gcloud run services describe {SERVICE_NAME} --region {LOCATION} --format="value(status.url)"
 API_URL = API_URL[0].strip()
+
+# 소셜 로그인 Redirect URI를 만들려면 서비스가 자기 주소를 알아야 합니다.
+!gcloud run services update {SERVICE_NAME} --region {LOCATION} \
+  --update-env-vars API_BASE={API_URL} -q > /dev/null
+
 print("\nAPI 주소:", API_URL)
+print("\n각 개발자 콘솔에 아래 Redirect URI를 등록하세요.")
+print("  카카오:", API_URL + "/auth/kakao/callback")
+print("  네이버:", API_URL + "/auth/naver/callback")
 """)
 
 code(r"""
@@ -1029,9 +1471,26 @@ import requests, json as _json
 
 print(requests.get(f"{API_URL}/health", timeout=30).json())
 
-r = requests.post(f"{API_URL}/chat", timeout=90,
+# (1) 아는 질문 — 바로 답해야 합니다.
+r = requests.post(f"{API_URL}/chat", timeout=120,
                   json={"tenant_id": BSM_TENANT, "question": "분양 조건과 가격을 알려주세요"})
-print(_json.dumps(r.json(), ensure_ascii=False, indent=2))
+print("\n[아는 질문]"); print(_json.dumps(r.json(), ensure_ascii=False, indent=2))
+
+# (2) 모르는 질문 — escalate=true 로 담당자 전달 흐름이 떠야 합니다.
+r = requests.post(f"{API_URL}/chat", timeout=120,
+                  json={"tenant_id": BSM_TENANT,
+                        "question": "저희 회사 ERP와 연동하려면 개발 기간이 얼마나 걸리나요?"})
+d = r.json(); print("\n[모르는 질문] escalate =", d.get("escalate")); print(d.get("answer"))
+
+# (3) 상담 시나리오
+print("\n[시나리오 노드]", list(requests.get(f"{API_URL}/flow", timeout=30).json()["nodes"].keys()))
+
+# (4) 담당자 전달 — 실제로 메일이 발송됩니다. 테스트할 때만 주석을 푸세요.
+# r = requests.post(f"{API_URL}/escalate", timeout=120, json={
+#     "session_id": "test", "question": "ERP 연동 개발 기간이 궁금합니다",
+#     "contact_email": "본인메일@example.com", "memo": "테스트 발송",
+#     "history": [{"role": "user", "content": "ERP 연동 가능한가요?"}]})
+# print(_json.dumps(r.json(), ensure_ascii=False, indent=2))
 """)
 
 md("""
@@ -1050,97 +1509,260 @@ code(r"""
 from pathlib import Path
 PUB = Path("/content/public"); PUB.mkdir(parents=True, exist_ok=True)
 
-# ── widget.js : 고객사 사이트에 삽입되는 스크립트 ──────────────────
+# ── widget.js : 해피톡 형태의 버튼 시나리오 + 자유 질문 + 담당자 전달 + 회원 문의 ──
 (PUB / "widget.js").write_text('''
 (function(){
   var me = document.currentScript;
   var TENANT = (me && me.getAttribute("data-tenant")) || "''' + BSM_TENANT + '''";
-  var API = "''' + API_URL + '''";
-  var SID = "s" + Math.random().toString(36).slice(2, 10);
+  var API    = "''' + API_URL + '''";
+  var PHONE  = "''' + COMPANY["phone"] + '''";
+  var MAILTO = "''' + COMPANY["email"] + '''";
+  var SID    = "s" + Math.random().toString(36).slice(2, 10);
+  var LS_KEY = "bsm_token";
 
   var css = document.createElement("style");
   css.textContent = [
-    ".bsmw{position:fixed;right:20px;bottom:20px;z-index:99999;font-family:system-ui,-apple-system,'Malgun Gothic',sans-serif}",
-    ".bsmw-btn{background:#8C2F39;color:#fff;border:none;border-radius:28px;padding:14px 20px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.22)}",
-    ".bsmw-box{display:none;flex-direction:column;width:340px;height:460px;background:#fff;border:1px solid #E2DFD8;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.2)}",
-    ".bsmw-hd{background:#14161A;color:#fff;padding:12px 14px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}",
-    ".bsmw-hd span{margin-left:auto;cursor:pointer;opacity:.6;font-size:18px;line-height:1}",
-    ".bsmw-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#F8F7F5}",
-    ".bsmw-m{max-width:86%;font-size:13.5px;line-height:1.6;padding:9px 12px;border-radius:8px;white-space:pre-wrap;word-break:break-word}",
-    ".bsmw-b{background:#fff;border:1px solid #E2DFD8;color:#14161A;align-self:flex-start}",
-    ".bsmw-u{background:#8C2F39;color:#fff;align-self:flex-end}",
-    ".bsmw-src{font-size:11px;color:#6A6E73;align-self:flex-start;padding-left:2px}",
-    ".bsmw-cta{display:flex;gap:6px;flex-wrap:wrap;align-self:flex-start}",
-    ".bsmw-cta a{font-size:12px;text-decoration:none;background:#8C2F39;color:#fff;padding:6px 11px;border-radius:5px}",
-    ".bsmw-in{display:flex;gap:6px;padding:10px;border-top:1px solid #E2DFD8;background:#fff}",
-    ".bsmw-in input{flex:1;border:1px solid #E2DFD8;border-radius:5px;padding:9px 10px;font-size:13.5px;min-width:0}",
-    ".bsmw-in button{background:#8C2F39;color:#fff;border:none;border-radius:5px;padding:9px 14px;font-size:13.5px;cursor:pointer}",
-    ".bsmw-note{font-size:10.5px;color:#8A8E93;padding:0 12px 9px;background:#fff}"
+   ".bw{position:fixed;right:20px;bottom:20px;z-index:99999;font-family:system-ui,-apple-system,'Malgun Gothic',sans-serif}",
+   ".bw-open{background:#8C2F39;color:#fff;border:none;border-radius:28px;padding:14px 20px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.22)}",
+   ".bw-box{display:none;flex-direction:column;width:352px;height:520px;max-height:78vh;background:#fff;border:1px solid #E2DFD8;border-radius:10px;overflow:hidden;box-shadow:0 14px 44px rgba(0,0,0,.22)}",
+   ".bw-hd{background:#14161A;color:#fff;padding:12px 14px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}",
+   ".bw-hd .who{font-size:11px;font-weight:400;color:#9B978F;margin-left:auto}",
+   ".bw-hd .x{cursor:pointer;opacity:.6;font-size:19px;line-height:1;padding-left:8px}",
+   ".bw-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;background:#F8F7F5}",
+   ".bw-m{max-width:88%;font-size:13.5px;line-height:1.62;padding:9px 12px;border-radius:8px;white-space:pre-wrap;word-break:break-word}",
+   ".bw-b{background:#fff;border:1px solid #E2DFD8;color:#14161A;align-self:flex-start}",
+   ".bw-u{background:#8C2F39;color:#fff;align-self:flex-end}",
+   ".bw-sys{align-self:center;font-size:11.5px;color:#8A8E93;text-align:center;max-width:100%}",
+   ".bw-src{font-size:11px;color:#6A6E73;align-self:flex-start;padding-left:2px}",
+   ".bw-btns{display:flex;flex-direction:column;gap:6px;align-self:stretch}",
+   ".bw-btn{background:#fff;border:1px solid #D9D5CC;border-radius:6px;padding:10px 12px;font-size:13.5px;cursor:pointer;text-align:center;color:#14161A;font-family:inherit}",
+   ".bw-btn:hover{border-color:#8C2F39;color:#8C2F39}",
+   ".bw-btn.pri{background:#8C2F39;color:#fff;border-color:#8C2F39}",
+   ".bw-btn.ka{background:#FEE500;border-color:#FEE500;color:#181600;font-weight:600}",
+   ".bw-btn.na{background:#03C75A;border-color:#03C75A;color:#fff;font-weight:600}",
+   ".bw-nav{display:flex;gap:6px;justify-content:center;padding:8px 12px;border-top:1px solid #EFEDE8;background:#fff}",
+   ".bw-nav button{background:#fff;border:1px solid #E2DFD8;border-radius:14px;padding:5px 12px;font-size:12px;cursor:pointer;color:#4A5056;font-family:inherit}",
+   ".bw-nav button:hover{border-color:#8C2F39;color:#8C2F39}",
+   ".bw-in{display:flex;gap:6px;padding:10px;border-top:1px solid #E2DFD8;background:#fff}",
+   ".bw-in input{flex:1;border:1px solid #E2DFD8;border-radius:5px;padding:9px 10px;font-size:13.5px;min-width:0;font-family:inherit}",
+   ".bw-in button{background:#8C2F39;color:#fff;border:none;border-radius:5px;padding:9px 14px;font-size:13.5px;cursor:pointer;font-family:inherit}",
+   ".bw-in button:disabled{background:#B9B5AE}",
+   ".bw-note{font-size:10.5px;color:#8A8E93;padding:0 12px 9px;background:#fff;line-height:1.5}",
+   ".bw-form{align-self:stretch;background:#fff;border:1px solid #E2DFD8;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:7px}",
+   ".bw-form label{font-size:11.5px;color:#6A6E73}",
+   ".bw-form input,.bw-form textarea{border:1px solid #E2DFD8;border-radius:5px;padding:8px 9px;font-size:13px;font-family:inherit;width:100%}",
+   ".bw-form textarea{min-height:64px;resize:vertical}"
   ].join("");
   document.head.appendChild(css);
 
-  var root = document.createElement("div"); root.className = "bsmw";
+  var root = document.createElement("div"); root.className = "bw";
   root.innerHTML =
-    '<div class="bsmw-box" id="bsmwBox">' +
-      '<div class="bsmw-hd">BSM AI 상담<span id="bsmwX">&times;</span></div>' +
-      '<div class="bsmw-log" id="bsmwLog"></div>' +
-      '<form class="bsmw-in" id="bsmwF"><input id="bsmwQ" placeholder="궁금한 점을 입력하세요" autocomplete="off"><button>전송</button></form>' +
-      '<div class="bsmw-note">AI가 생성한 답변입니다. 개인정보는 입력하지 마세요.</div>' +
+    '<div class="bw-box" id="bwBox">' +
+      '<div class="bw-hd">BSM AI 상담<span class="who" id="bwWho"></span><span class="x" id="bwX">&times;</span></div>' +
+      '<div class="bw-log" id="bwLog"></div>' +
+      '<div class="bw-nav"><button id="bwBack">이전으로</button><button id="bwHome">처음으로</button><button id="bwEnd">종료하기</button></div>' +
+      '<form class="bw-in" id="bwF"><input id="bwQ" placeholder="버튼을 선택하거나 메시지를 입력해 주세요." autocomplete="off"><button id="bwSend">전송</button></form>' +
+      '<div class="bw-note">AI가 생성한 답변입니다. 답변이 어려운 문의는 담당자에게 전달해 회신해 드립니다.</div>' +
     '</div>' +
-    '<button class="bsmw-btn" id="bsmwOpen">AI 상담</button>';
+    '<button class="bw-open" id="bwOpen">AI 상담</button>';
   document.body.appendChild(root);
 
-  var box = root.querySelector("#bsmwBox"), log = root.querySelector("#bsmwLog");
-  root.querySelector("#bsmwOpen").onclick = function(){
-    box.style.display = "flex"; this.style.display = "none";
-    if (!log.childNodes.length) add("b", "안녕하세요. 무엇을 도와드릴까요?");
-  };
-  root.querySelector("#bsmwX").onclick = function(){
-    box.style.display = "none"; root.querySelector("#bsmwOpen").style.display = "";
-  };
+  var box = root.querySelector("#bwBox"), log = root.querySelector("#bwLog"),
+      who = root.querySelector("#bwWho"), inp = root.querySelector("#bwQ"),
+      send = root.querySelector("#bwSend");
 
-  function add(kind, text){
-    var d = document.createElement("div");
-    d.className = "bsmw-m bsmw-" + kind; d.textContent = text;
-    log.appendChild(d); log.scrollTop = log.scrollHeight; return d;
-  }
-  function cta(action){
-    var map = {
-      BUY:   [["지금 신청하기", "''' + CAFE24_URL + '''"]],
-      TRIAL: [["14일 무료 체험", "''' + SITE_DOMAIN + '''/#trial"]],
-      CONTACT:[["전화 상담", "tel:''' + COMPANY["phone"] + '''"], ["메일 문의", "mailto:''' + COMPANY["email"] + '''"]]
-    };
-    var items = map[action]; if (!items) return;
-    var w = document.createElement("div"); w.className = "bsmw-cta";
+  var history = [];     // 자유 대화 기록
+  var stack   = [];     // 화면 스택 (이전으로)
+  var lastQ   = "";
+  var member  = null;
+  var FLOW    = null;
+
+  function token(){ try { return localStorage.getItem(LS_KEY) || ""; } catch(e){ return ""; } }
+  function setToken(t){ try { t ? localStorage.setItem(LS_KEY, t) : localStorage.removeItem(LS_KEY); } catch(e){} }
+
+  function el(cls, text){ var d=document.createElement("div"); d.className=cls; if(text!=null) d.textContent=text; log.appendChild(d); log.scrollTop=log.scrollHeight; return d; }
+  function bot(t){ return el("bw-m bw-b", t); }
+  function user(t){ return el("bw-m bw-u", t); }
+  function sys(t){ return el("bw-m bw-sys", t); }
+  function clear(){ log.innerHTML=""; }
+
+  function buttons(items){
+    var w=document.createElement("div"); w.className="bw-btns";
     items.forEach(function(it){
-      var a = document.createElement("a"); a.textContent = it[0]; a.href = it[1];
-      if (it[1].indexOf("http") === 0) { a.target = "_blank"; a.rel = "noopener"; }
-      w.appendChild(a);
+      var b=document.createElement("button");
+      b.type="button"; b.className="bw-btn"+(it.style?" "+it.style:""); b.textContent=it.label;
+      b.onclick=it.onClick;
+      w.appendChild(b);
     });
-    log.appendChild(w); log.scrollTop = log.scrollHeight;
+    log.appendChild(w); log.scrollTop=log.scrollHeight; return w;
   }
 
-  root.querySelector("#bsmwF").onsubmit = function(e){
-    e.preventDefault();
-    var inp = root.querySelector("#bsmwQ"), q = inp.value.trim();
-    if (!q) return;
-    add("u", q); inp.value = ""; inp.disabled = true;
-    var bub = add("b", "답변을 준비하고 있습니다...");
-    fetch(API + "/chat", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({tenant_id: TENANT, question: q, session_id: SID})
-    }).then(function(r){ return r.json(); }).then(function(d){
-      bub.textContent = d.answer;
-      if (d.sources && d.sources.length) {
-        var s = document.createElement("div");
-        s.className = "bsmw-src"; s.textContent = "근거: " + d.sources.join(", ");
-        log.appendChild(s);
-      }
-      cta(d.action);
-    })["catch"](function(){
-      bub.textContent = "연결이 원활하지 않습니다. 전화 ''' + COMPANY["phone"] + '''로 문의해 주세요.";
-    })["finally"](function(){ inp.disabled = false; inp.focus(); });
+  // ── 화면 ────────────────────────────────────────────────
+  function push(fn){ stack.push(fn); fn(); }
+  function back(){ if(stack.length>1){ stack.pop(); var f=stack[stack.length-1]; clear(); f(); } else home(); }
+  function home(){ stack=[]; clear(); push(screenHome); }
+
+  function screenHome(){
+    bot("안녕하세요. BSM AI 상담 챗봇입니다.\\n홈페이지와 카카오톡 등 여러 채널의 고객 문의를 AI가 대신 답하도록 만들어 드립니다.\\n\\n원하시는 항목을 선택해 주세요.");
+    buttons([
+      {label:"신규 도입 문의", onClick:function(){ push(screenIntro); }},
+      {label:"가격 · 견적 문의", onClick:function(){ push(screenPriceGate); }},
+      {label:"상담 시작하기", style:"pri", onClick:function(){ push(screenFree); }}
+    ]);
+  }
+
+  function screenIntro(){
+    clear();
+    bot("어떤 것을 만들고 싶으신지 알려주시면 바로 상담해 드립니다.\\n예를 들어 이렇게 물어보셔도 됩니다.");
+    buttons([
+      {label:"쇼핑몰 주문·배송 문의를 자동으로 답하게 하고 싶어요", onClick:function(){ ask(this.textContent); }},
+      {label:"사내 규정 PDF를 직원이 물어보게 하고 싶어요", onClick:function(){ ask(this.textContent); }},
+      {label:"홈페이지에 24시간 상담 챗봇을 붙이고 싶어요", onClick:function(){ ask(this.textContent); }},
+      {label:"직접 입력할게요", style:"pri", onClick:function(){ push(screenFree); }}
+    ]);
+  }
+
+  function screenFree(){
+    clear();
+    bot("만들고 싶으신 내용을 편하게 적어주세요.\\n제가 아는 범위는 바로 답해 드리고, 어려운 내용은 담당자에게 전달해 회신해 드립니다.");
+    inp.focus();
+  }
+
+  // ── 가격 문의: 회원가입/로그인 후 접수 ──────────────────
+  function screenPriceGate(){
+    clear();
+    if(member){ return screenInquiry(); }
+    bot("가격과 견적은 회원 확인 후 안내해 드립니다.\\n카카오 또는 네이버 계정으로 간편하게 시작하실 수 있습니다.");
+    buttons([
+      {label:"카카오로 시작하기", style:"ka", onClick:function(){ login("kakao"); }},
+      {label:"네이버로 시작하기", style:"na", onClick:function(){ login("naver"); }},
+      {label:"로그인 없이 전화 상담", onClick:function(){ location.href="tel:"+PHONE; }}
+    ]);
+    sys("가입 시 이름과 이메일만 수집하며, 견적 회신 목적으로만 사용합니다.");
+  }
+
+  function login(provider){
+    location.href = API + "/auth/" + provider + "/login?redirect=" + encodeURIComponent(location.href.split("#")[0]);
+  }
+
+  function screenInquiry(){
+    clear();
+    bot("환영합니다" + (member && member.name ? ", " + member.name + "님" : "") + ".\\n아래 내용을 남겨주시면 담당자가 견적과 함께 회신드립니다.");
+    var f=document.createElement("div"); f.className="bw-form";
+    f.innerHTML =
+      '<label>회사명</label><input id="bwC" placeholder="예: 비에스엠">' +
+      '<label>연락처</label><input id="bwP" placeholder="010-0000-0000">' +
+      '<label>문의 내용</label><textarea id="bwB" placeholder="어떤 챗봇이 필요하신지, 예상 문의량이 어느 정도인지 적어주세요."></textarea>';
+    log.appendChild(f);
+    buttons([{label:"견적 요청 보내기", style:"pri", onClick:function(){
+      var body=(f.querySelector("#bwB").value||"").trim();
+      if(!body){ sys("문의 내용을 입력해 주세요."); return; }
+      this.disabled=true;
+      post("/inquiry", {category:"PRICE", title:"가격·견적 문의",
+        body:body, company_name:f.querySelector("#bwC").value||"",
+        phone:f.querySelector("#bwP").value||"", channel:"web"}, true)
+      .then(function(d){
+        if(d && d.ok){ bot(d.message); if(!d.email_sent) sys("메일 발송이 지연될 수 있어 담당자가 별도로 확인합니다."); }
+        else if(d && d.error==="LOGIN_REQUIRED"){ setToken(""); member=null; screenPriceGate(); }
+        else { bot("접수 중 오류가 발생했습니다. 전화 "+PHONE+"로 문의해 주세요."); }
+      });
+    }}]);
+  }
+
+  // ── 담당자 전달 (답변 불가 시) ──────────────────────────
+  function screenEscalate(question){
+    var f=document.createElement("div"); f.className="bw-form";
+    f.innerHTML =
+      '<label>회신받으실 이메일</label><input id="bwE" type="email" placeholder="name@example.com">' +
+      '<label>덧붙일 내용 (선택)</label><textarea id="bwM" placeholder="추가로 알려주실 내용이 있으면 적어주세요."></textarea>';
+    log.appendChild(f);
+    buttons([{label:"담당자에게 전달하기", style:"pri", onClick:function(){
+      var email=(f.querySelector("#bwE").value||"").trim();
+      if(!/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(email)){ sys("이메일 형식을 확인해 주세요."); return; }
+      this.disabled=true;
+      post("/escalate", {session_id:SID, question:question, contact_email:email,
+                         memo:f.querySelector("#bwM").value||"", history:history.slice(-12)})
+      .then(function(d){
+        if(d && d.ok){
+          bot(d.message);
+          if(!d.email_sent) sys("메일 발송이 지연될 수 있으나 문의는 정상 접수되었습니다.");
+        } else {
+          bot("접수에 실패했습니다. "+MAILTO+" 으로 직접 보내주시거나 "+PHONE+"로 전화 주세요.");
+        }
+      });
+    }}]);
+    log.scrollTop=log.scrollHeight;
+  }
+
+  // ── 통신 ────────────────────────────────────────────────
+  function post(path, body, auth){
+    var h={"Content-Type":"application/json"};
+    if(auth && token()) h["Authorization"]="Bearer "+token();
+    return fetch(API+path,{method:"POST",headers:h,body:JSON.stringify(body)})
+      .then(function(r){ return r.json(); })["catch"](function(){ return null; });
+  }
+
+  function ask(q){
+    if(!q) return;
+    user(q); history.push({role:"user", content:q});
+    lastQ=q; inp.value=""; inp.disabled=true; send.disabled=true;
+    var bub=bot("답변을 준비하고 있습니다...");
+    post("/chat", {tenant_id:TENANT, question:q, session_id:SID, history:history.slice(-8)})
+    .then(function(d){
+      if(!d){ bub.textContent="연결이 원활하지 않습니다. 전화 "+PHONE+"로 문의해 주세요."; return; }
+      bub.textContent=d.answer;
+      history.push({role:"assistant", content:d.answer});
+      if(d.sources && d.sources.length) el("bw-src","근거: "+d.sources.join(", "));
+      if(d.escalate){ screenEscalate(q); return; }
+      if(d.action==="PRICE"){ buttons([{label:"가격·견적 문의 남기기", style:"pri", onClick:function(){ push(screenPriceGate); }}]); }
+      else if(d.action==="BUY"){ buttons([{label:"지금 신청하기", style:"pri", onClick:function(){ window.open("''' + CAFE24_URL + '''","_blank"); }}]); }
+      else if(d.action==="TRIAL"){ buttons([{label:"무료로 시작하기", style:"pri", onClick:function(){ push(screenPriceGate); }}]); }
+      else if(d.action==="CONTACT"){ buttons([{label:"전화 상담", onClick:function(){ location.href="tel:"+PHONE; }},
+                                              {label:"담당자에게 메일로 전달", onClick:function(){ screenEscalate(q); }}]); }
+    })["finally"](function(){ inp.disabled=false; send.disabled=false; inp.focus(); });
+  }
+
+  // ── 이벤트 ──────────────────────────────────────────────
+  root.querySelector("#bwOpen").onclick=function(){
+    box.style.display="flex"; this.style.display="none";
+    if(!log.childNodes.length) home();
   };
+  root.querySelector("#bwX").onclick=function(){
+    box.style.display="none"; root.querySelector("#bwOpen").style.display="";
+  };
+  root.querySelector("#bwBack").onclick=back;
+  root.querySelector("#bwHome").onclick=home;
+  root.querySelector("#bwEnd").onclick=function(){
+    clear(); bot("상담을 종료했습니다. 이용해 주셔서 감사합니다.\\n추가 문의는 전화 "+PHONE+" 또는 메일 "+MAILTO+" 로 주세요.");
+    buttons([{label:"다시 시작하기", onClick:home}]);
+  };
+  root.querySelector("#bwF").onsubmit=function(e){ e.preventDefault(); ask((inp.value||"").trim()); };
+
+  // 소셜 로그인 복귀 처리
+  (function(){
+    var h=location.hash||"";
+    if(h.indexOf("bsm_login=")>-1){
+      setToken(h.split("bsm_login=")[1].split("&")[0]);
+      history_replace();
+    } else if(h.indexOf("bsm_login_error=")>-1){
+      history_replace();
+      setTimeout(function(){ box.style.display="flex"; root.querySelector("#bwOpen").style.display="none";
+        clear(); bot("로그인이 완료되지 않았습니다. 다시 시도해 주세요."); push(screenPriceGate); }, 300);
+    }
+    function history_replace(){
+      try { window.history.replaceState(null,"",location.pathname+location.search); } catch(e){}
+    }
+  })();
+
+  // 로그인 상태 확인
+  if(token()){
+    fetch(API+"/me",{headers:{"Authorization":"Bearer "+token()}})
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        if(d && d.ok){ member=d; who.textContent=(d.name||"회원")+" 님"; }
+        else setToken("");
+      })["catch"](function(){});
+  }
 })();
 ''')
 
@@ -1412,6 +2034,38 @@ def billing_usage(month=None, tenant_id=None):
       WHERE {where}
       GROUP BY tenant_id ORDER BY resolutions DESC''').to_dataframe()
 
+def escalations(days=14, status=None):
+    # 챗봇이 답하지 못해 담당자에게 넘어간 문의
+    w = f"created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)"
+    if status:
+        w += f" AND status = '{status}'"
+    return bq.query(f'''
+      SELECT created_at, esc_id, contact_email, question, email_sent, status, summary
+      FROM `{DS}.escalations` WHERE {w} ORDER BY created_at DESC''').to_dataframe()
+
+def inquiries(days=30):
+    # 회원 로그인 후 접수된 가격·견적 문의
+    return bq.query(f'''
+      SELECT i.created_at, i.inquiry_id, i.category, i.company_name, i.phone,
+             i.contact_email, i.title, i.status, m.provider, m.name
+      FROM `{DS}.inquiries` i
+      LEFT JOIN `{DS}.members` m USING (member_id)
+      WHERE i.created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)
+      ORDER BY i.created_at DESC''').to_dataframe()
+
+def members_stat(days=30):
+    return bq.query(f'''
+      SELECT provider, COUNT(*) AS signups, COUNTIF(email != '') AS with_email
+      FROM `{DS}.members`
+      WHERE created_at >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL {days} DAY)
+      GROUP BY provider ORDER BY signups DESC''').to_dataframe()
+
+print("── 담당자 전달 대기 (미회신) ──")
+display(escalations(status="NEW"))
+print("── 회원 가격·견적 문의 ──")
+display(inquiries())
+print("── 소셜 가입 현황 ──")
+display(members_stat())
 print("── 이번 달 과금 기준 (해결 건수) ──")
 display(billing_usage())
 print("── 최근 지표 ──")
