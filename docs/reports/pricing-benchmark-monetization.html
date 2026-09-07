@@ -1,0 +1,325 @@
+<title>해결 건수 과금 전환안</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&display=swap">
+<style>
+  :root{
+    --paper:#F1F0EA; --surface:#FBFAF6; --surface-2:#E7E5DC;
+    --ink:#171A1C; --ink-2:#3B4044; --muted:#63676B;
+    --rule:#D6D3C8; --rule-strong:#B8B4A6;
+    --accent:#8C2F39; --accent-soft:#EBDCDB;
+    --signal:#1E6A5B; --signal-soft:#DCE8E2;
+    --warn:#8A5A16; --warn-soft:#F0E5D2;
+    --display:"Gowun Batang","Nanum Myeongjo",Batang,serif;
+    --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#17181A; --surface:#1F2123; --surface-2:#2A2C2E;
+      --ink:#EDEAE2; --ink-2:#C6C2B8; --muted:#93908A;
+      --rule:#33363A; --rule-strong:#4A4E52;
+      --accent:#D08089; --accent-soft:#3A2529;
+      --signal:#6BBFA6; --signal-soft:#1D2E2A;
+      --warn:#D2A45E; --warn-soft:#332A1B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#17181A; --surface:#1F2123; --surface-2:#2A2C2E;
+    --ink:#EDEAE2; --ink-2:#C6C2B8; --muted:#93908A;
+    --rule:#33363A; --rule-strong:#4A4E52;
+    --accent:#D08089; --accent-soft:#3A2529;
+    --signal:#6BBFA6; --signal-soft:#1D2E2A;
+    --warn:#D2A45E; --warn-soft:#332A1B;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.72;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 28px 96px}
+  .topbar{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--paper) 88%,transparent);
+    backdrop-filter:blur(8px);border-bottom:1px solid var(--rule)}
+  .topbar-in{max-width:1080px;margin:0 auto;padding:10px 28px;display:flex;align-items:baseline;gap:16px;flex-wrap:wrap}
+  .brand{font-family:var(--mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .topbar .ask{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--muted)}
+  .topbar .ask b{color:var(--ink);font-weight:600}
+
+  header.masthead{padding:56px 0 32px;border-bottom:2px solid var(--ink)}
+  .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.2em;text-transform:uppercase;
+    color:var(--muted);margin:0 0 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .eyebrow span.dot{width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block}
+  h1{font-family:var(--display);font-weight:700;font-size:clamp(34px,5.4vw,54px);line-height:1.16;margin:0 0 18px;text-wrap:balance}
+  .deck{font-size:clamp(16.5px,2.1vw,19px);line-height:1.64;color:var(--ink-2);max-width:64ch;margin:0;font-weight:300}
+  .deck em{font-style:normal;color:var(--accent);font-weight:500}
+  .alert{margin:30px 0 0;background:var(--warn-soft);border-left:3px solid var(--warn);padding:18px 22px}
+  .alert .t{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--warn);font-weight:600;margin-bottom:6px}
+  .alert p{margin:0;font-size:14.5px;line-height:1.68;color:var(--ink-2);max-width:none}
+  .alert b{color:var(--ink)}
+
+  section{padding:52px 0 8px;border-bottom:1px solid var(--rule)}
+  section:last-of-type{border-bottom:none}
+  .sechead{display:flex;gap:18px;align-items:flex-start;margin-bottom:26px}
+  .secnum{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.08em;padding-top:9px;min-width:34px}
+  h2{font-family:var(--display);font-weight:700;font-size:clamp(25px,3.4vw,34px);line-height:1.25;margin:0;text-wrap:balance}
+  .sechead p{margin:6px 0 0;color:var(--muted);font-size:14.5px;line-height:1.6;max-width:66ch}
+  h3{font-family:var(--body);font-weight:600;font-size:16.5px;margin:34px 0 12px}
+  h3::before{content:"";display:inline-block;width:14px;height:2px;background:var(--accent);vertical-align:middle;margin-right:9px;transform:translateY(-3px)}
+  p{margin:0 0 15px;max-width:70ch}
+  a{color:var(--accent);text-underline-offset:3px}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  strong{font-weight:600}
+  code{font-family:var(--mono);font-size:.88em;background:var(--surface-2);padding:1px 5px;border-radius:2px}
+  .note{background:var(--surface);border-left:3px solid var(--accent);padding:18px 22px;margin:24px 0;font-size:14.5px;line-height:1.68;color:var(--ink-2)}
+  .note b{color:var(--ink)}
+  .pull{font-family:var(--display);font-size:clamp(20px,2.7vw,27px);line-height:1.42;color:var(--ink);
+    margin:32px 0;padding-left:22px;border-left:2px solid var(--accent);max-width:52ch}
+
+  .tablewrap{overflow-x:auto;margin:20px 0 26px;border:1px solid var(--rule);background:var(--surface)}
+  table{border-collapse:collapse;width:100%;min-width:620px;font-size:14px}
+  th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top;line-height:1.55}
+  thead th{background:var(--surface-2);font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13px;white-space:nowrap}
+  tr.hl td{background:var(--accent-soft)}
+  tr.total td{background:var(--surface-2);font-weight:600}
+  .up{color:var(--signal);font-weight:600}
+  .dn{color:var(--accent);font-weight:600}
+
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:1px;background:var(--rule);border:1px solid var(--rule);margin:22px 0 28px}
+  .tile{background:var(--surface);padding:18px 20px}
+  .tile .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+  .tile .v{font-size:25px;font-weight:600;line-height:1.15;font-variant-numeric:tabular-nums}
+  .tile .v.accent{color:var(--accent)}
+  .tile .s{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+
+  ul.clean{list-style:none;padding:0;margin:16px 0 22px;display:grid;gap:13px}
+  ul.clean li{padding-left:20px;position:relative;font-size:15px;line-height:1.65;max-width:74ch}
+  ul.clean li::before{content:"";position:absolute;left:0;top:11px;width:7px;height:1.5px;background:var(--rule-strong)}
+
+  .axis{display:grid;gap:10px;margin:22px 0 28px}
+  .ax{display:grid;grid-template-columns:132px 1fr;gap:16px;border:1px solid var(--rule);background:var(--surface);padding:14px 18px;align-items:start}
+  .ax .who{font-weight:600;font-size:14.5px}
+  .ax .who small{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:400;margin-top:3px}
+  .ax .body{font-size:14px;color:var(--ink-2);line-height:1.62}
+  .ax .body b{color:var(--ink)}
+  .ax.us{border-color:var(--accent);border-width:2px;background:var(--accent-soft)}
+  .ax.us .who{color:var(--accent)}
+
+  .sources{columns:2;column-gap:36px;font-size:13.5px;line-height:1.7}
+  .sources li{break-inside:avoid;margin-bottom:9px}
+  footer{padding:40px 0 0;color:var(--muted);font-size:12.5px;line-height:1.7;border-top:1px solid var(--rule);margin-top:44px}
+
+  @media (max-width:720px){
+    .wrap{padding:0 18px 72px}.topbar-in{padding:9px 18px}
+    .ax{grid-template-columns:1fr;gap:6px}
+    .sources{columns:1}
+  }
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="topbar"><div class="topbar-in">
+  <span class="brand">BSM · Pricing</span>
+  <span class="ask">경쟁사 벤치마킹 · <b>수익화 재설계</b></span>
+</div></div>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow"><span class="dot"></span> 가격 전략 보고서 <span class="dot"></span> 2026.09.07 <span class="dot"></span> v1.0</p>
+  <h1>상담원 수도, 대화 수도 아닌<br>해결한 만큼</h1>
+  <p class="deck">해피톡·사이드톡·단비·엔터프라이즈 4개 진영의 가격 구조를 뜯어본 결과, <em>모두가 성과가 아니라 자원에 과금</em>하고 있었습니다. BSM은 과금 축 자체를 바꿔 이 시장에 들어갑니다.</p>
+
+  <div class="alert">
+    <div class="t">먼저 말씀드릴 것</div>
+    <p><b>기존 계획의 “월 99,000원 단일 플랜”은 차별화가 아닙니다.</b> 사이드톡의 그로스 플랜이 정확히 <b>월 99,000원</b>이고, 문서 기반 RAG·환각 차단·홈페이지/카카오톡 연동까지 설명이 거의 같습니다. 같은 가격에 같은 기능 문구로는 이길 수 없습니다. 이 보고서는 그 전제를 바꾸는 데서 출발합니다.</p>
+  </div>
+</header>
+
+<section>
+  <div class="sechead"><div class="secnum">01</div><div>
+    <h2>경쟁 지형 — 과금 축이 셋으로 갈립니다</h2>
+    <p>기능이 아니라 “무엇에 돈을 매기는가”로 보면 시장이 선명해집니다.</p>
+  </div></div>
+
+  <div class="axis">
+    <div class="ax">
+      <div class="who">해피톡<small>SEAT · 상담원 수</small></div>
+      <div class="body">채팅과 전화를 묶은 <b>통합 AICC</b>. 상담원 계정 단위로 과금합니다. 상담원이 많은 콜센터형 고객이 타깃입니다.
+        <br><b>구조적 모순</b> — AI가 잘 동작해 상담원을 줄이면 고객의 요금이 줄어듭니다. 벤더의 수익과 고객의 목표가 반대 방향입니다.</div>
+    </div>
+    <div class="ax">
+      <div class="who">단비<small>CC · 대화 건수</small></div>
+      <div class="body">코딩 없이 만드는 <b>노코드 빌더</b>. 무료 플랜이 있고 Standard가 <b>월 30,000원</b>, 초과분은 1,000cc당 3,000원입니다. API는 Standard 이상.
+        <br><b>구조적 모순</b> — 대화가 늘수록 요금이 오르니 고객은 챗봇 노출을 줄이려 합니다. 성공할수록 비싸집니다.</div>
+    </div>
+    <div class="ax">
+      <div class="who">사이드톡<small>TIER · 기능 등급</small></div>
+      <div class="body">문서 업로드와 RAG로 환각을 차단하는 <b>상담 챗봇</b>. 스타터 <b>29,800원</b> / 그로스 <b>99,000원</b> / 스케일 <b>399,000원</b>. AI 비용 포함, 약정 없음, 장기계약 할인.
+        <br><b>BSM과 정면 충돌</b> — 가격대·기능 서술·타깃이 거의 겹칩니다. 가장 직접적인 경쟁자입니다.</div>
+    </div>
+    <div class="ax">
+      <div class="who">솔트룩스 · 와이즈넛 · 다이퀘스트<small>PROJECT · 구축비</small></div>
+      <div class="body">금융·공공 대상 고도화 NLU/RAG. <b>견적형 프로젝트</b>로 수천만~억 단위이며 구축 기간이 깁니다.
+        <br><b>빈 구간</b> — 중견기업 이하는 이 가격을 감당하지 못하고, 위 SaaS 3사는 대규모 요건을 못 받습니다. 그 사이가 비어 있습니다.</div>
+    </div>
+    <div class="ax us">
+      <div class="who">BSM<small>RESOLUTION · 해결 건수</small></div>
+      <div class="body"><b>챗봇이 근거를 갖고 답변을 끝낸 대화</b>만 셉니다. 답을 못 찾아 상담원에게 넘긴 대화는 세지 않고 요금도 없습니다.
+        <br><b>고객과 같은 방향</b> — 고객은 많이 해결될수록 이득이고, BSM도 많이 해결할수록 매출이 늡니다.</div>
+    </div>
+  </div>
+
+  <p class="pull">세 진영 모두 자원에 과금합니다. 좌석, 대화, 기능 등급 — 셋 다 고객이 실제로 얼마나 이득을 봤는지와 무관합니다.</p>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">02</div><div>
+    <h2>해결 건수 과금 — 왜 BSM만 할 수 있나</h2>
+    <p>좋은 아이디어라서가 아니라, 이미 만들어 둔 구조가 이 과금을 가능하게 합니다.</p>
+  </div></div>
+
+  <h3>정의</h3>
+  <div class="note">
+    <b>해결(Resolution)</b> = 챗봇이 <b>근거 문서를 찾아</b> 답변을 완료한 대화.<br>
+    근거를 찾지 못해 “확인이 필요합니다”라며 상담 연결로 넘긴 대화는 <b>해결이 아니며 과금하지 않습니다.</b>
+  </div>
+
+  <h3>세 가지 전제가 이미 갖춰져 있습니다</h3>
+  <ul class="clean">
+    <li><strong>판정 장치</strong> — 하이브리드 RAG가 근거 유무를 판정합니다. 구축 노트북의 <code>chat_logs.grounded</code> 컬럼에 대화마다 이미 기록되고 있어, 과금 집계는 쿼리 한 줄입니다.</li>
+    <li><strong>원가 방어</strong> — 검색 점수가 기준(<code>MIN_RRF</code>) 미만이면 <strong>모델을 아예 호출하지 않습니다.</strong> 미해결 대화의 원가가 사실상 0이라 “못 맞히면 안 받는다”가 손실이 아닙니다. 품질 가드레일이 그대로 수익 모델의 전제가 됩니다.</li>
+    <li><strong>원가 여유</strong> — 자체 GCP 하이브리드 RAG 구조에서 해결 1건당 원가는 20~40원 수준입니다. 초과 과금 40원은 원가에 맞춘 것이 아니라 <strong>고객이 계산하기 쉬운 숫자</strong>로 잡은 것입니다.</li>
+  </ul>
+
+  <h3>영업에서 무엇이 달라지나</h3>
+  <p>중소기업 도입 저항의 1순위는 “우리 회사 자료로 AI가 제대로 답할까?”입니다. 기존 방식은 이 리스크를 고객이 집니다. 월정액을 먼저 내고, 잘 안 되면 손해도 고객 몫입니다.</p>
+  <p>해결 과금은 <strong>그 리스크를 벤더가 집니다.</strong> 영업 문장이 “좋은 챗봇입니다”에서 <strong>“못 맞히면 돈 안 받습니다”</strong>로 바뀝니다. 이 한 문장이 무료 체험보다 강한 전환 장치입니다.</p>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">03</div><div>
+    <h2>재설계 요금표</h2>
+    <p>Free를 열어 리드를 받고, 경쟁사 가격 구간에 정확히 붙여 비교당했을 때 이기도록 배치했습니다.</p>
+  </div></div>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>플랜</th><th class="n">월 요금</th><th class="n">포함 해결</th><th class="n">문서</th><th>주요 포함</th><th>경쟁 대비</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Free</strong></td><td class="n">0원</td><td class="n">100건</td><td class="n">50p</td><td>웹 위젯 · BSM 배지 표시</td><td>단비 외엔 무료가 없음 → <strong>리드 수집 창구</strong></td></tr>
+      <tr><td><strong>Starter</strong></td><td class="n">39,000원</td><td class="n">500건</td><td class="n">300p</td><td>웹 위젯 1채널 · 배지 제거</td><td>사이드톡 29,800원보다 9,200원 비싸지만 <strong>해결 보장</strong>이 붙음</td></tr>
+      <tr class="hl"><td><strong>Growth</strong> · 주력</td><td class="n">99,000원</td><td class="n">2,000건</td><td class="n">1,000p</td><td>카카오톡 채널 · 주간 리포트</td><td>사이드톡 그로스와 <strong>동일 가격에 문서 2배</strong></td></tr>
+      <tr><td><strong>Scale</strong></td><td class="n">249,000원</td><td class="n">8,000건</td><td class="n">5,000p</td><td>다채널 · API · SSO · 전담 온보딩</td><td>사이드톡 스케일 399,000원 대비 <strong class="up">38% 저렴</strong></td></tr>
+      <tr><td><strong>Enterprise</strong></td><td class="n">연 1,200만~</td><td class="n">협의</td><td class="n">무제한</td><td>ERP·CRM 연동 · 전용 환경</td><td>솔트룩스·와이즈넛 구축비의 <strong>1/5~1/10</strong></td></tr>
+      <tr class="total"><td>초과 과금</td><td class="n">해결당 40원</td><td colspan="4">포함 건수 초과분에만 적용. 연납 시 2개월 할인. 개통 지원 30만원(초기 20곳 무료).</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>가격 배치의 논리</b> — Starter를 사이드톡보다 <b>일부러 조금 비싸게</b> 두었습니다. 최저가 경쟁에 들어가면 원가가 비슷한 싸움이라 이길 수 없습니다. 대신 “해결 보장”이라는 다른 약속을 얹어 <b>가격이 아니라 조건으로 비교</b>되게 만듭니다. 반대로 Scale은 38% 낮춰, 규모가 커질수록 BSM이 유리해 보이도록 설계했습니다.</div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">04</div><div>
+    <h2>수익화 포인트 일곱 가지</h2>
+    <p>구독 하나에 기대지 않습니다. 성격이 다른 매출을 겹쳐 현금 흐름과 성장률을 분리합니다.</p>
+  </div></div>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th class="n">#</th><th>수익원</th><th>성격</th><th>1년차 기여</th><th>왜 필요한가</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td><strong>구독 매출</strong></td><td>반복 · MRR</td><td class="n">4,844만</td><td>기업가치 산정의 기준. 이 숫자로 투자 라운드를 설명합니다</td></tr>
+      <tr><td class="n">2</td><td><strong>초과 해결 과금</strong></td><td>반복 · 사용량 연동</td><td class="n">구독의 8%</td><td>고객이 성장하면 자동으로 늘어나는 매출. <strong>NDR 100% 초과</strong>의 유일한 원천</td></tr>
+      <tr><td class="n">3</td><td><strong>개통·데이터 정제</strong></td><td>일회성</td><td class="n">1,395만</td><td>초기 현금. 파트너에게 70%를 넘겨 영업 동기를 만듭니다</td></tr>
+      <tr class="hl"><td class="n">4</td><td><strong>분양비(선수금)</strong></td><td>일회성 · 대형</td><td class="n">구좌당 1,500만</td><td><strong>경쟁사 누구도 없는 축.</strong> 성장 자금을 외부 조달 없이 확보합니다</td></tr>
+      <tr><td class="n">5</td><td>파트너 플랫폼 사용료</td><td>반복</td><td class="n">구좌당 월 30만</td><td>파트너가 테넌트 5곳을 채우기 전까지의 유지 수익</td></tr>
+      <tr><td class="n">6</td><td>엔터프라이즈 구축</td><td>일회성 · 고액</td><td class="n">연 1,200만~</td><td>레퍼런스 확보. 공공·금융 진입의 발판</td></tr>
+      <tr><td class="n">7</td><td>도메인 팩 마켓플레이스</td><td>반복 · 2년차</td><td class="n">—</td><td>파트너가 만든 업종 팩을 거래. 플랫폼 수수료 모델로의 전환점</td></tr>
+    </tbody>
+  </table></div>
+
+  <h3>이 중 하나만 고른다면 — 분양</h3>
+  <p>사이드톡과 단비는 셀프서비스라 <strong>온라인 획득에만 의존</strong>합니다. 해피톡은 직접 영업 조직을 씁니다. BSM은 전국 파트너망으로 갑니다. 경쟁사가 이 구조를 따라오려면 제품이 아니라 <strong>조직과 계약 체계를 새로 만들어야</strong> 합니다.</p>
+  <p class="pull">제품은 6개월이면 따라잡힙니다. 유통망은 2년이 걸립니다.</p>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">05</div><div>
+    <h2>1년차 수익 재추정</h2>
+    <p>가격 개편이 실제로 얼마를 바꾸는지 기존 계획과 나란히 놓았습니다.</p>
+  </div></div>
+
+  <div class="tiles">
+    <div class="tile"><div class="k">블렌디드 ARPU</div><div class="v">105,300원</div><div class="s">기존 99,000원 · +6%</div></div>
+    <div class="tile"><div class="k">기말 유료 고객</div><div class="v accent">103곳</div><div class="s">기존 81곳 · +27%</div></div>
+    <div class="tile"><div class="k">연 구독 매출</div><div class="v">4,844만</div><div class="s">기존 3,651만 · +33%</div></div>
+    <div class="tile"><div class="k">연 총매출</div><div class="v accent">6,239만</div><div class="s">기존 4,716만 · +32%</div></div>
+  </div>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>항목</th><th class="n">기존 계획</th><th class="n">재설계</th><th class="n">차이</th><th>근거</th></tr></thead>
+    <tbody>
+      <tr><td>요금제</td><td class="n">99,000원 단일</td><td class="n">0 / 3.9 / 9.9 / 24.9만</td><td class="n">—</td><td>믹스 Starter 40% · Growth 45% · Scale 15% 가정</td></tr>
+      <tr><td>ARPU</td><td class="n">99,000원</td><td class="n">105,300원</td><td class="n up">+6%</td><td>믹스 97,500원 + 초과 과금 8%</td></tr>
+      <tr><td>연간 신규 계약</td><td class="n">91곳</td><td class="n">113곳</td><td class="n up">+24%</td><td>Free 플랜이 리드 창구 역할</td></tr>
+      <tr><td>월 이탈률</td><td class="n">3.0%</td><td class="n">2.5%</td><td class="n up">-0.5%p</td><td>성과 과금은 “쓰지도 않는데 나간다”는 해지 사유를 없앰</td></tr>
+      <tr><td>구독 매출</td><td class="n">3,651만</td><td class="n">4,844만</td><td class="n up">+33%</td><td>고객 수 증가 + ARPU 상승</td></tr>
+      <tr><td>개통비 매출</td><td class="n">1,065만</td><td class="n">1,395만</td><td class="n up">+31%</td><td>신규 93곳(무료 20곳 제외) × 채택률 50% × 30만원</td></tr>
+      <tr class="total"><td>연 총매출</td><td class="n">4,716만</td><td class="n">6,239만</td><td class="n up">+32%</td><td>분양·엔터프라이즈 매출은 제외한 보수 기준</td></tr>
+    </tbody>
+  </table></div>
+
+  <div class="note"><b>가장 불확실한 줄은 개통비입니다.</b> 채택률 50%는 검증되지 않은 가정이며, 실제로는 30%에 그칠 수 있습니다. 그 경우 총매출은 약 5,700만원으로 내려갑니다. 반대로 <b>분양 구좌가 1개만 팔려도 1,500만원이 더해집니다.</b> 위 표에 분양 매출을 넣지 않은 것은 그 편차가 너무 커서 기준선을 흐리기 때문입니다.</div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">06</div><div>
+    <h2>이 모델의 위험</h2>
+    <p>새 과금 축은 새로운 분쟁 지점을 만듭니다. 미리 막아 둡니다.</p>
+  </div></div>
+
+  <div class="tablewrap"><table>
+    <thead><tr><th>위험</th><th class="n">영향</th><th>대응</th></tr></thead>
+    <tbody>
+      <tr><td><strong>“이건 해결이 아니다”는 분쟁</strong></td><td class="n">상</td><td>고객 대시보드에 <strong>대화별 근거 문서를 공개</strong>하고, 이의 제기 건은 즉시 차감합니다. 판정을 감추면 신뢰가 무너지고, 공개하면 오히려 품질의 증거가 됩니다</td></tr>
+      <tr><td>미해결 대화의 원가 부담</td><td class="n">중</td><td>근거 점수 미달 시 모델을 호출하지 않는 게이트가 이미 있습니다. 미해결 대화 원가는 임베딩 1회로 사실상 0에 수렴합니다</td></tr>
+      <tr><td><strong>해결률을 올리려는 유혹</strong></td><td class="n">상</td><td>판정 기준을 느슨하게 하면 매출은 늘고 신뢰는 무너집니다. <code>MIN_RRF</code> 값 변경은 <strong>골든셋 재평가를 통과해야만</strong> 반영하도록 절차로 묶습니다</td></tr>
+      <tr><td>Free 플랜 남용</td><td class="n">중</td><td>월 100해결·문서 50페이지 한도와 배지 노출로 제한합니다. 배지는 비용이 아니라 <strong>역마케팅 채널</strong>입니다</td></tr>
+      <tr><td>사이드톡의 가격 대응</td><td class="n">중</td><td>가격으로 맞불을 놓지 않습니다. 저쪽이 내리면 BSM은 <strong>해결 보장 범위를 넓힙니다.</strong> 원가 구조를 아는 쪽만 할 수 있는 대응입니다</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">07</div><div>
+    <h2>구축 노트북에 반영한 변경</h2>
+    <p>가격 개편은 문서만 고쳐서는 끝나지 않습니다. 코드에도 반영했습니다.</p>
+  </div></div>
+  <ul class="clean">
+    <li><strong>프로젝트 연결</strong> — <code>PROJECT_ID = "aichat-507914"</code>로 설정하고, 구글 계정 인증 후 <strong>인증 계정·프로젝트 접근·결제 연결·ADC</strong> 네 가지를 자동 점검하는 단계를 새로 넣었습니다. 하나라도 실패하면 조치 방법을 출력합니다.</li>
+    <li><strong>요금 체계</strong> — Firestore <code>company/bsm</code> 문서에 4개 플랜과 초과 단가를 넣었습니다. 가격을 바꾸면 API 프롬프트와 챗봇 답변이 함께 따라갑니다.</li>
+    <li><strong>과금 집계</strong> — <code>billing_usage()</code> 함수를 추가했습니다. 테넌트별 대화 수·해결 수·상담 이관 수·해결률을 월 단위로 집계해 그대로 청구서 근거가 됩니다.</li>
+    <li><strong>지식과 골든셋</strong> — 챗봇이 새 요금과 “해결” 개념을 정확히 설명하도록 지식을 고쳤고, 골든셋에 <strong>해결 정의·초과 단가·무료 플랜</strong> 문항을 추가했습니다.</li>
+    <li><strong>홈페이지</strong> — 4개 플랜 카드와 “해결한 만큼만 받습니다” 메시지로 가격 섹션을 교체했습니다.</li>
+  </ul>
+  <div class="note"><b>아직 코드가 없는 부분</b> — 해결 건수의 <b>월 한도 초과 차단</b>과 <b>고객용 사용량 대시보드</b>는 아직 없습니다. 유료 고객이 10곳을 넘기 전까지는 <code>billing_usage()</code> 조회와 수동 청구로 충분하며, 그 전에 만들면 검증되지 않은 가정 위에 코드를 쌓는 셈입니다.</div>
+</section>
+
+<section>
+  <div class="sechead"><div class="secnum">08</div><div><h2>참고 출처</h2></div></div>
+  <ul class="sources">
+    <li><a href="https://sidetalk.kr/pricing/">사이드톡 요금제</a></li>
+    <li><a href="https://sidetalk.kr/">사이드톡 — AI 고객상담 챗봇</a></li>
+    <li><a href="https://www.happytalk.io/">해피톡 — AI 상담 솔루션</a></li>
+    <li><a href="https://happytalk.io/price">해피톡 이용가격</a></li>
+    <li><a href="https://danbee.ai/">단비Ai — 챗봇 빌더</a></li>
+    <li><a href="https://doc.danbee.ai/biz_price_faq.html">단비Ai 요금 관련 FAQ</a></li>
+    <li><a href="https://danbee.ai/pricing.html">단비Ai 요금제</a></li>
+    <li><a href="https://www.wisenut.com/sub/ai/chatBot.php">와이즈넛 와이즈 아이챗</a></li>
+    <li><a href="https://www.saltlux.com/kor/contents/view.do?mId=41">솔트룩스 TALKBOT</a></li>
+    <li><a href="https://www.diquest.com/">다이퀘스트</a></li>
+  </ul>
+</section>
+
+<footer>
+  <p>경쟁사 가격은 공개된 요금 페이지와 문서를 기준으로 정리했으며, 협의 조건·프로모션·계약 규모에 따라 실제 가격은 달라질 수 있습니다. 해피톡의 플랜별 금액은 공개 자료에서 확인되지 않아 <strong>과금 축(상담원 단위)</strong>만 반영했습니다. 재무 수치는 명시된 가정에 기반한 추정입니다.</p>
+  <p>BSM · 경쟁사 벤치마킹 및 수익화 재설계 v1.0 · 2026.09.07</p>
+</footer>
+
+</div>
