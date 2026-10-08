@@ -40,6 +40,7 @@ APIS = [
     "identitytoolkit.googleapis.com", "firebase.googleapis.com", "iam.googleapis.com",
     "generativelanguage.googleapis.com", "storage.googleapis.com",
     "cloudresourcemanager.googleapis.com", "serviceusage.googleapis.com",
+    "firebasehosting.googleapis.com",
 ]
 
 RUN_SA_ROLES = ["roles/datastore.user", "roles/cloudtasks.enqueuer",

@@ -720,3 +720,65 @@ def step14_measure_cost():
                   f"(현재 크레딧 차감은 5배 — {'타당' if ratio <= 5 else '차감량 상향 필요'})")
     conf.save_state(cost_summary=summary)
     return {"summary": summary, "raw": str(out)}
+
+
+# ── 15. 기본 도메인 URL 발급 (Firebase Hosting → Cloud Run) ───────────────
+FH = "https://firebasehosting.googleapis.com/v1beta1"
+
+
+def step15_default_domain():
+    """Cloud Run 의 긴 기본 주소 대신 {프로젝트}.web.app 기본 도메인으로 열어줍니다.
+
+    사용자 지정 도메인을 사지 않고도 바로 쓸 수 있는 주소입니다.
+    Hosting 은 모든 경로를 Cloud Run 서비스로 넘깁니다(rewrite).
+    """
+    run_url = conf.state().get("service_url")
+    if not run_url:
+        svc = get_or_none(f"{RUN}/projects/{P}/locations/{conf.REGION}/services/{conf.SERVICE}")
+        run_url = (svc or {}).get("uri", "")
+    if not run_url:
+        raise RuntimeError("Cloud Run 서비스가 없습니다. 12단계를 먼저 실행하세요.")
+    _ok(f"Cloud Run 기본 주소: {run_url}")
+
+    sites = api("GET", f"{FH}/projects/{P}/sites").get("sites", [])
+    site = next((s for s in sites if s.get("type") == "DEFAULT_SITE"), None) or \
+        next(iter(sites), None)
+    if site is None:
+        _info(f"Hosting 기본 사이트를 만듭니다: {P}")
+        api("POST", f"{FH}/projects/{P}/sites", params={"siteId": P}, body={})
+        site = api("GET", f"{FH}/projects/{P}/sites/{P}")
+    site_name = site["name"]                      # projects/{p}/sites/{site}
+    site_id = site_name.split("/")[-1]
+    default_url = site.get("defaultUrl") or f"https://{site_id}.web.app"
+    _ok(f"Hosting 사이트: {site_id}")
+
+    # 모든 경로를 Cloud Run 으로 넘깁니다. 정적 파일은 올리지 않습니다.
+    config = {"rewrites": [{"glob": "**",
+                            "run": {"serviceId": conf.SERVICE, "region": conf.REGION}}]}
+    try:
+        version = api("POST", f"{FH}/{site_name}/versions", body={"config": config})
+    except ApiError as exc:
+        raise RuntimeError(
+            f"Hosting 버전 생성 실패: {exc}\n"
+            f"       리전 {conf.REGION} 이 거부되면 Cloud Run 기본 주소({run_url})를 "
+            f"그대로 쓰거나 서비스를 지원 리전으로 옮기세요.") from None
+    version_name = version["name"]
+    api("POST", f"{FH}/{version_name}:populateFiles", body={"files": {}})
+    api("PATCH", f"{FH}/{version_name}", params={"updateMask": "status"},
+        body={"status": "FINALIZED"})
+    api("POST", f"{FH}/{site_name}/releases", params={"versionName": version_name}, body={})
+    _ok("Hosting 릴리스 완료 (모든 경로 → Cloud Run)")
+
+    urls = {"default_domain": default_url,
+            "alt_domain": f"https://{site_id}.firebaseapp.com",
+            "cloud_run": run_url}
+    conf.save_state(**urls)
+    print()
+    print(f"       기본 도메인 : {urls['default_domain']}")
+    print(f"       예비 도메인 : {urls['alt_domain']}")
+    print(f"       원본(Run)   : {urls['cloud_run']}")
+    print()
+    _info("Firebase 콘솔 > Authentication > 설정 > 승인된 도메인에 다음을 모두 넣으세요.")
+    _info(f"  {site_id}.web.app, {site_id}.firebaseapp.com, "
+          f"{run_url.replace('https://', '')}")
+    return urls

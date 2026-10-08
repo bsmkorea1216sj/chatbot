@@ -29,6 +29,7 @@ STEPS = [
     (12, "Cloud Run 배포", steps.step12_deploy),
     (13, "스모크 테스트", steps.step13_smoke),
     (14, "원가 측정", steps.step14_measure_cost),
+    (15, "기본 도메인 URL 발급", steps.step15_default_domain),
 ]
 BY_NUM = {n: (label, fn) for n, label, fn in STEPS}
 
@@ -47,12 +48,13 @@ def main():
         for num, label, _ in STEPS:
             print(f"  {num:>2}. {label}")
         print("\n14단계는 실제 모델 호출로 비용이 발생합니다. 따로 실행하세요.")
+        print("--all 은 14단계를 뺀 1~13 + 15 를 실행합니다.")
         return 0
 
     if args.all:
-        wanted = list(range(1, 14))
+        wanted = list(range(1, 14)) + [15]
     elif args.start or args.end:
-        wanted = list(range(args.start or 1, (args.end or 13) + 1))
+        wanted = list(range(args.start or 1, (args.end or 15) + 1))
     else:
         wanted = args.step
     if not wanted:
@@ -76,8 +78,11 @@ def main():
                   file=sys.stderr)
             return 1
     print(f"\n완료: {wanted}단계")
-    if conf.state().get("service_url"):
-        print(f"서비스 주소: {conf.state()['service_url']}")
+    st = conf.state()
+    if st.get("default_domain"):
+        print(f"기본 도메인: {st['default_domain']}")
+    if st.get("service_url"):
+        print(f"원본(Run)  : {st['service_url']}")
     return 0
 
 
