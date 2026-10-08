@@ -1,0 +1,63 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI 리서치 · 빅데이터 김교수</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#18364b;background:#edf3f7}body{margin:0}
+main{max-width:860px;margin:auto;padding:24px}section{background:#fff;border:1px solid #d4e0e8;border-radius:16px;padding:24px;margin:20px 0}
+h1{font-size:36px;margin:8px 0}h2{font-size:22px}label{display:block;margin:12px 0}
+input[type=text],textarea,select{box-sizing:border-box;width:100%;padding:12px;border:1px solid #8ca5b7;border-radius:8px;font:inherit}
+button,.buy{padding:12px 18px;border:0;border-radius:8px;background:#146295;color:white;font:inherit;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}.muted{color:#536c7d}.types{display:flex;gap:18px;flex-wrap:wrap}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.8}iframe{border:0;width:100%;height:130px}
+@media(max-width:500px){main{padding:12px}section{padding:18px}h1{font-size:28px}}
+</style></head><body><main>
+<p class="muted">빅데이터 김교수</p><h1>AI 리서치 보고서</h1>
+<p>주제에서 출발해 근거를 찾고, 이야기로 정리합니다.</p>
+<section><h2>구글 로그인으로 시작</h2><p>기본 리서치 무료 3회 · 심층 리서치는 유료 이용권 필요</p>
+<button id="login" disabled>구글로 로그인</button> <button id="logout" hidden>로그아웃</button>
+<p id="account" class="muted">로그인 설정을 확인하고 있습니다.</p>
+<a class="buy" id="buy" hidden target="_blank" rel="noopener">월 22,000원 이용권</a></section>
+<section><h2>무엇을 조사할까요?</h2><form id="form">
+<label>조사 주제<input type="text" id="topic" required minlength="2" maxlength="600" placeholder="예: 소상공인의 AI 고객상담 도입 효과"></label>
+<fieldset><legend>우선 조사할 자료 유형</legend><div class="types">
+<label><input type="checkbox" name="category" value="논문" checked> 논문</label>
+<label><input type="checkbox" name="category" value="공식자료" checked> 공식자료</label>
+<label><input type="checkbox" name="category" value="블로그"> 블로그</label></div></fieldset>
+<label>분석 범위<select id="mode"><option value="basic">기본 리서치</option><option value="deep">심층 리서치</option></select></label>
+<p class="muted">선택한 유형을 우선 검색합니다. 검색 결과의 자료 유형과 원문을 확인해 주세요.</p>
+<button id="run" disabled>리서치 시작</button></form><p id="status" role="status" aria-live="polite"></p></section>
+<section id="result" hidden><h2>리서치 보고서</h2><pre id="report"></pre>
+<button id="download">보고서 다운로드</button><ul id="references"></ul>
+<iframe id="suggestions" title="Google 검색 제안" sandbox="allow-popups allow-popups-to-escape-sandbox" hidden></iframe>
+<p class="muted">AI 생성 초안입니다. 인용된 원문과 대조해 검수하세요.</p></section>
+<p class="muted">프롬프트를 넘어 경영으로 · 빅데이터 김교수</p>
+</main><script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js';
+const el=id=>document.getElementById(id);let auth,current=null,busy=false,pending=null,lastReport='';
+async function api(path,options={}){if(!current)throw Error('구글 로그인 후 이용해 주세요.');
+const token=await current.getIdToken();const r=await fetch(path,{...options,headers:{...options.headers,'Authorization':'Bearer '+token,'Content-Type':'application/json'}});
+const data=await r.json();if(!r.ok){const messages={PAID_ACCESS_REQUIRED:'심층 리서치 또는 추가 이용에는 유료 이용권이 필요합니다.',TOP_UP_REQUIRED:'잔여 사용량이 부족합니다. 추가 충전 후 이용해 주세요.',GOOGLE_LOGIN_REQUIRED:'구글 로그인이 필요합니다.'};throw Error(messages[data.detail]|| (typeof data.detail==='string'?data.detail:'입력 내용을 확인해 주세요.'));}return data;}
+async function refresh(){const a=await api('/api/account');el('account').textContent=`${current.displayName||'사용자'} · 무료 ${a.free_remaining}회 남음${a.paid?' · 유료 잔여 '+a.credits_remaining+'크레딧':''}`;}
+function showReport(data){lastReport=data.report||'';el('report').textContent=lastReport;el('references').replaceChildren();
+for(const s of data.sources||[]){const li=document.createElement('li'),a=document.createElement('a');if(!s.url?.startsWith('https://'))continue;a.href=s.url;a.textContent=s.title;a.target='_blank';a.rel='noopener noreferrer';li.append(a);el('references').append(li);}
+el('suggestions').srcdoc=data.search_html||'';el('suggestions').hidden=!data.search_html;el('result').hidden=false;}
+async function poll(key){for(let i=0;i<150;i++){if(!current)throw Error('다시 로그인해 결과를 확인해 주세요.');const d=await api('/api/research/'+key);
+if(d.status==='SUCCESS'){showReport(d);pending=null;return;}if(d.status==='REVIEW_REQUIRED')throw Error(d.message||'작업 확인이 필요합니다.');
+el('status').textContent=d.status==='RUNNING'?'자료 검색과 보고서 작성 중입니다.':'작업이 접수되었습니다.';
+await new Promise(resolve=>setTimeout(resolve,2000));}throw Error('작업이 계속 진행 중입니다. 같은 입력으로 다시 눌러 상태를 확인하세요.');}
+el('form').addEventListener('submit',async e=>{e.preventDefault();if(busy)return;const categories=[...document.querySelectorAll('[name=category]:checked')].map(x=>x.value);if(!categories.length){el('status').textContent='자료 유형을 하나 이상 선택하세요.';return;}
+const payload={topic:el('topic').value.trim(),mode:el('mode').value,categories};const signature=JSON.stringify(payload);
+if(!pending||pending.signature!==signature)pending={signature,id:crypto.randomUUID()};busy=true;el('run').disabled=true;el('status').textContent='작업을 접수하고 있습니다.';
+try{const j=await api('/api/research',{method:'POST',body:JSON.stringify({...payload,request_id:pending.id})});await poll(j.job_id);el('status').textContent='보고서가 완성되었습니다. 출처를 확인하세요.';await refresh();}
+catch(err){el('status').textContent=err.message;}finally{busy=false;el('run').disabled=!current;}});
+el('download').onclick=()=>{const url=URL.createObjectURL(new Blob([lastReport],{type:'text/markdown;charset=utf-8'}));const a=document.createElement('a');a.href=url;a.download='AI_Research_Report.md';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+try{const cfg=await (await fetch('/api/config')).json();if(!cfg.firebase.apiKey||!cfg.firebase.authDomain)throw Error('운영자의 구글 로그인 설정이 필요합니다.');
+auth=getAuth(initializeApp(cfg.firebase));el('login').disabled=false;
+el('login').onclick=()=>signInWithPopup(auth,new GoogleAuthProvider()).catch(e=>el('status').textContent='로그인을 완료하지 못했습니다. 다시 시도해 주세요.');
+el('logout').onclick=()=>signOut(auth);
+if(cfg.payments_connected&&cfg.purchase_url?.startsWith('https://')){el('buy').href=cfg.purchase_url;el('buy').hidden=false;}
+onAuthStateChanged(auth,async u=>{current=u;el('login').hidden=!!u;el('logout').hidden=!u;el('run').disabled=!u||busy;
+if(u){try{await refresh();}catch(err){el('account').textContent=err.message;}}else{el('account').textContent='구글 로그인 후 무료 3회를 체험하세요.';el('result').hidden=true;lastReport='';}});
+}catch(err){el('account').textContent=err.message;}
+</script></body></html>

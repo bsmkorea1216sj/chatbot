@@ -1,0 +1,6 @@
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+firebase-admin>=6.5,<8
+google-cloud-firestore>=2.19,<3
+google-cloud-tasks>=2.18,<3
+google-genai>=1.0,<3
