@@ -25,6 +25,8 @@ db-course/cdXX-N/output/   결과물: 파일명 끝에 (26)
 db-course/docs/            스터디 노트, 인수인계 문서
 ```
 - 결과 PPTX를 손으로 고치지 말고 **scripts의 원고를 고친 뒤 build.py로 다시 생성**한다.
+- 최종 결과물은 **LMS 업로드용 PPTX만** 만든다 (PDF·이미지 등 부가 파일 생성 금지).
+- 용량 절약: scripts·STATUS·LOG는 수시로 커밋, **output PPTX는 장(章) 완성 시점에만 커밋**한다.
 - 실행: `pip install python-pptx` → `python db-course/cd10-1/scripts/build.py`
 
 ## 교안 제작 규칙 (강의자 요구사항)
