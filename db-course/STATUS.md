@@ -11,6 +11,7 @@
 - 10-2, 10-3: 미착수
 
 ## 다음 할 일
+0. Colab `CD10-1_Colab_Lab(26).ipynb`: AWS 키 보안비밀 방식으로 셀 2개 교체 — 코드는 강의자에게 전달함(강의자가 붙여넣기). Claude는 드라이브 파일 내용 직접 수정 불가(rclone 토큰 등록 시 가능)
 1. 강의자에게 10-1 기준본 파일명 확인 → 이후 요청은 그 파일에서 작업
 2. 10-2 Index·Join 보강 (사례: 인덱스 누락 Seq Scan 장애, 조인 방식 선택 / Colab: CREATE INDEX 전후 EXPLAIN)
 3. 10-3 RAID 보강 (사례: AWS EBS와 RAID 0/1, RDS Multi-AZ)
