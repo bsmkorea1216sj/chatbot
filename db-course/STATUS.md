@@ -4,7 +4,7 @@
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
 ## 현재 상태
-- 10-1 PostgreSQL 아키텍처: AI 초안 완료 (45장, 노트 전체). 드라이브 업로드는 강의자가 진행
+- 10-1 기준본: 드라이브 `CD10-1_PostgreSQL26.pptx` (48장, 강의자 편집 중 · Google 슬라이드로 편집). AI 수정은 이 파일에 요청된 페이지만
   - 부속: `CD10-1_Colab_Lab(26).ipynb`, `CD10-1_RDS_Proxy_흐름도(26).pptx`(1장)
 - 드라이브 현재 파일: `CD10-1_PostgreSQL26.pptx`(강의자 수정 중, 11-03 16:40 저장),
   `CD10-1_PostgreSQL(26).pptx`·`CD10-2_Index_Join(26).pptx`·`CD10-3_RAID(26).pptx`(이름은 (26)이지만 내용은 원본)
