@@ -98,25 +98,34 @@ LAB2 = '''with c1.cursor() as cur:
                    FROM pg_stat_activity GROUP BY 1 ORDER BY 2 DESC""")
     display(pd.DataFrame(cur.fetchall(), columns=["backend_type", "n"]))'''
 
-LAB3 = '''with c1.cursor() as cur:
-    for sql in ["SELEC * FROM film", "SELECT * FROM filmx"]:
-        try:
-            cur.execute(sql)
-        except Exception as e:
-            print(type(e).__name__, "→", str(e).splitlines()[0])
+LAB3 = '''c1.autocommit = True; cur = c1.cursor()
+for sql in ['SELEC * FROM film', 'SELECT * FROM filmx']:
+    try: cur.execute(sql)
+    except Exception as e: print(type(e).__name__, '→', str(e).splitlines()[0])
 
-    q = "SELECT sum(amount) FROM payment WHERE amount >= 3"
-    for i in (1, 2):
-        cur.execute("EXPLAIN (ANALYZE, BUFFERS) " + q)
-        print(f"--- {i}차")
-        print("\\n".join(r[0] for r in cur.fetchall()))'''
+# dvdrental.payment가 없으면 실습용 테이블을 만들어 사용
+cur.execute("SELECT to_regclass('payment')")
+T = 'payment'
+if cur.fetchone()[0] is None:
+    T = 'cd10_lab_payment'
+    cur.execute(f"""CREATE TABLE IF NOT EXISTS {T} AS
+        SELECT g AS payment_id,
+               round((random() * 10)::numeric, 2) AS amount,
+               now() - g * interval '1 minute' AS payment_date
+        FROM generate_series(1, 200000) AS g""")
+    cur.execute(f"ANALYZE {T}")
+    print(f"ℹ️ payment 테이블이 없어 실습용 {T}(20만 행)을 사용합니다.")
 
-DEEP = '''with c1.cursor() as cur:
-    for wm in ("4MB", "64kB"):
-        cur.execute(f"SET work_mem = '{wm}'")
-        cur.execute("EXPLAIN ANALYZE SELECT * FROM payment ORDER BY amount, payment_date")
-        print(wm, [r[0].strip() for r in cur.fetchall() if "Sort Method" in r[0]])
-    cur.execute("RESET work_mem")'''
+q = f'SELECT sum(amount) FROM {T} WHERE amount >= 3'
+for i in (1, 2):
+    cur.execute('EXPLAIN (ANALYZE, BUFFERS) ' + q)
+    print(f'--- {i}차'); print('\\n'.join(r[0] for r in cur.fetchall()))'''
+
+DEEP = '''for wm in ('4MB', '64kB'):
+    cur.execute(f"SET work_mem = '{wm}'")
+    cur.execute(f'EXPLAIN ANALYZE SELECT * FROM {T} ORDER BY amount, payment_date')
+    print(wm, [r[0].strip() for r in cur.fetchall() if 'Sort Method' in r[0]])
+cur.execute('RESET work_mem')'''
 
 cells = [
     md("# CD10-1 PostgreSQL Architecture · Colab 실습\n"
