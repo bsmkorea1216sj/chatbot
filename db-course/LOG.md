@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-04 [claude] 기준본 전체 약어·용어 주석 23개 페이지 추가(footnotes.py). 본문이 꽉 찬 15·18·20은 앞 페이지와 중복이라 생략, 10은 강의자 WAL 문구와 겹쳐 OS·SYS만 좌상단
 - 2026-11-04 [claude] 기준본 23번(Uber)에 약어 주석(MVCC·WAL·ACID) 추가. 규칙 추가: 약어는 해당 페이지 하단 주석
 - 2026-11-04 [claude] 기준본 CD10-1_PostgreSQL26.pptx 21번(Utility 주요 프로세스)만 수정: 역할별 4묶음 보강, 그림 Backend→Background Writer 오타, 노트에 UPDATE 흐름 추가
 - 2026-11-04 [claude] Colab 실행 결과 인사이트 셀 4개 추가(실습1·2·3·심화 제목 아래). 실측: PID 23416/23421, max_connections 81, shared_buffers 185MB, Parallel Seq Scan 45ms, work_mem 4MB도 external merge

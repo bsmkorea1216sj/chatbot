@@ -17,6 +17,7 @@
 3. 10-3 RAID 보강 (사례: AWS EBS와 RAID 0/1, RDS Multi-AZ)
 
 ## 확인 필요
+- 기준본 43·44번 Colab 슬라이드 코드가 예전 PG_HOST 방식 → 노트북(AWS 키 방식)과 불일치, 강의자 확인 후 수정
 - 10-1 OpenAI 사례 출처(PGConf.dev 2025) 원문 확인
 - Colab 코드 실제 RDS 실행 검증 전
 
