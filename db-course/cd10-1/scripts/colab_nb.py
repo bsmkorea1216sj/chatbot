@@ -19,56 +19,69 @@ import boto3, psycopg2, requests
 import pandas as pd
 from IPython.display import display
 
-def secret(name, default=None):
-    try:
-        v = userdata.get(name)
-        return v.strip() if v else default
-    except Exception:
-        return default
+def secret(*names, default=None):
+    for n in names:
+        try:
+            v = userdata.get(n)
+            if v and v.strip():
+                return v.strip()
+        except Exception:
+            pass
+    return default
 
-key, skey = secret("AWS_ACCESS_KEY"), secret("AWS_SECRET_KEY")
+key = secret("AWS_ACCESS_KEY", "AWS_ACCESS_KEY_ID")
+skey = secret("AWS_SECRET_KEY", "AWS_SECRET_ACCESS_KEY")
 if not key or not skey:
     raise ValueError("AWS_ACCESS_KEY와 AWS_SECRET_KEY 보안비밀 접근을 허용하세요.")
-
 api = Config(connect_timeout=5, read_timeout=10, retries={"total_max_attempts": 1})
 aws = boto3.Session(aws_access_key_id=key, aws_secret_access_key=skey,
-                    region_name=secret("AWS_REGION", "ap-northeast-2"))
+                    region_name=secret("AWS_REGION", "AWS_DEFAULT_REGION", default="ap-northeast-2"))
 aws.client("sts", config=api).get_caller_identity()
 print("✅ AWS 인증 완료", flush=True)
 
-host = secret("DB_HOST")
-port = int(secret("DB_PORT", "5432"))
-user = secret("DB_USER", "postgres")
-dbname = secret("DB_NAME", "dvdrental")
+# 엔드포인트·포트: 보안비밀 → RDS 조회 → 기존 실습(CD9-3) 값 순서로 사용
+INSTANCE_ID = secret("DB_INSTANCE_ID", default="postgresql-lab-01")
+host, port = secret("DB_HOST"), secret("DB_PORT")
+if not host or not port:
+    try:
+        ep = aws.client("rds", config=api).describe_db_instances(
+            DBInstanceIdentifier=INSTANCE_ID)["DBInstances"][0]["Endpoint"]
+        host, port = host or ep["Address"], port or ep["Port"]
+    except Exception as e:
+        print("RDS 조회 실패, 기존 실습 값 사용:", type(e).__name__)
+host = host or "postgresql-lab-01.cf4icu2qu8n0.ap-northeast-2.rds.amazonaws.com"
+port = int(port or 5433)
+user = secret("DB_USER", "DB_USERNAME", default="postgres")
+print(f"DB 엔드포인트: {host}:{port}", flush=True)
 
-if not host:
-    host = input("DB 엔드포인트 입력 후 Enter: ").strip()
-if not host:
-    raise ValueError("DB 엔드포인트가 필요합니다.")
-
-print("🔑 아래 비밀번호 입력칸에 DB 비밀번호를 입력하고 Enter를 누르세요.", flush=True)
-password = getpass("DB 비밀번호: ")
+password = secret("DB_PASSWORD") or getpass("DB 비밀번호: ")
 if not password:
     raise ValueError("DB 비밀번호가 비어 있습니다.")
 
-print("SSL 인증서 준비 중...", flush=True)
 r = requests.get("https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem", timeout=(5, 15))
 r.raise_for_status()
 ca = Path("/content/rds-global-bundle.pem")
 ca.write_bytes(r.content)
 
-config = dict(host=host, port=port, dbname=dbname, user=user,
-              password=password, sslmode="verify-full",
-              sslrootcert=str(ca), connect_timeout=10,
-              options="-c statement_timeout=30000 -c lock_timeout=5000")
+cfg = dict(host=host, port=port, user=user, password=password,
+           sslmode="verify-full", sslrootcert=str(ca), connect_timeout=10,
+           options="-c statement_timeout=30000 -c lock_timeout=5000")
+
+dbname = secret("DB_NAME", default="dvdrental")
+try:
+    psycopg2.connect(**cfg, dbname=dbname).close()
+except psycopg2.OperationalError as e:
+    if "does not exist" not in str(e):
+        raise
+    print(f"⚠️ {dbname} DB가 없어 postgres로 접속합니다. (실습 3·심화는 dvdrental 필요)")
+    dbname = "postgres"
+cfg["dbname"] = dbname
 
 def connect(name="cd10_1_lab"):
-    c = psycopg2.connect(**config, application_name=name)
+    c = psycopg2.connect(**cfg, application_name=name)
     c.autocommit = True
     return c
 
-c = connect("cd10_1_connection_test")
-c.close()
 print(f"✅ DB 연결 완료 ({dbname}). 다음 실습 셀을 실행하세요.", flush=True)'''
 
 LAB1 = '''c1, c2 = connect("cd10_1_session_A"), connect("cd10_1_session_B")
@@ -108,8 +121,8 @@ DEEP = '''with c1.cursor() as cur:
 cells = [
     md("# CD10-1 PostgreSQL Architecture · Colab 실습\n"
        "**보안 비밀(왼쪽 열쇠)**: `AWS_ACCESS_KEY`, `AWS_SECRET_KEY` (필수), "
-       "`DB_HOST`, `DB_USER`, `DB_NAME`(기본 dvdrental), `DB_PORT`, `AWS_REGION` (선택)\n\n"
-       "DB 비밀번호는 실행할 때 입력칸에 직접 입력합니다. RDS 보안그룹에서 5432 포트를 허용해야 합니다."),
+       "`DB_PASSWORD`(없으면 입력칸 표시), `DB_HOST`·`DB_PORT`(없으면 RDS 자동 조회) (선택)\n\n"
+       "엔드포인트·포트는 AWS 키로 자동 조회합니다 (기존 실습: postgresql-lab-01, 포트 5433)."),
     code("!pip -q install boto3 psycopg2-binary pandas requests"),
     md("## 0 · AWS 인증과 RDS 접속 확인"),
     code(SETUP),
