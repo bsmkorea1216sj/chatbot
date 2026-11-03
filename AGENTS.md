@@ -42,6 +42,7 @@
 5. 사례는 확인 가능한 공개 자료만, 불확실하면 STATUS.md에 "확인 필요"로 남긴다
 6. 결과는 LMS 업로드용 PPTX만 (PDF·이미지 등 부가 파일 만들지 않음)
 7. 렌더링해서 글자 넘침·겹침 확인
+8. **약칭(약어)이 나오면 그 페이지 하단에 보이는 주석**을 단다: `※ 약어: 풀네임 (한글 뜻)` (예: `※ MVCC: Multi-Version Concurrency Control (다중 버전 동시성 제어)`). 출처 줄 위, 본문과 겹치지 않게
 
 ## 금지
 - 비밀번호·AWS 키·`.streamlit/secrets.toml` 커밋 금지 (Colab은 `userdata.get(...).strip()`)

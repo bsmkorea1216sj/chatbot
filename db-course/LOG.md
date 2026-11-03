@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-04 [claude] 기준본 23번(Uber)에 약어 주석(MVCC·WAL·ACID) 추가. 규칙 추가: 약어는 해당 페이지 하단 주석
 - 2026-11-04 [claude] 기준본 CD10-1_PostgreSQL26.pptx 21번(Utility 주요 프로세스)만 수정: 역할별 4묶음 보강, 그림 Backend→Background Writer 오타, 노트에 UPDATE 흐름 추가
 - 2026-11-04 [claude] Colab 실행 결과 인사이트 셀 4개 추가(실습1·2·3·심화 제목 아래). 실측: PID 23416/23421, max_connections 81, shared_buffers 185MB, Parallel Seq Scan 45ms, work_mem 4MB도 external merge
 - 2026-11-04 [claude] Colab 실습3·심화: payment 없으면 cd10_lab_payment(20만 행) 자동 생성 (RDS에 dvdrental 미설치, 드라이브 dvdrental/dvdrental.tar 있음)
