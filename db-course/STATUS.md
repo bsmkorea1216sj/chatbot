@@ -7,7 +7,7 @@
 - 10-1 기준본: `CD10-1_PostgreSQL26.pptx` (48장, 강의자 편집 중). 약어 주석 전체 반영 완료
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정
-  - Colab `CD10-2_Colab_Lab(26).ipynb` (인덱스 전후, 조인 방식 변화, B-tree vs BRIN 크기) — 실행 검증 전
+  - Colab `CD10-2_Colab_Lab(26).ipynb`: 각 셀 자동 접속, 트리·비교 표 출력 — 실행 검증 전. 교안 29~35 결과 패널은 '예상 결과' → 실행 후 실측값으로 교체 필요
 - 10-3: 미착수 (원본 `CD10-3_RAID(26).pptx`, 내용은 원본)
 
 ## 다음 할 일
