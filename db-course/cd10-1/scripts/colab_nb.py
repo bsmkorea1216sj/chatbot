@@ -121,7 +121,7 @@ for i in (1, 2):
     cur.execute('EXPLAIN (ANALYZE, BUFFERS) ' + q)
     print(f'--- {i}차'); print('\\n'.join(r[0] for r in cur.fetchall()))'''
 
-DEEP = '''for wm in ('4MB', '64kB'):
+DEEP = '''for wm in ('64kB', '4MB', '32MB'):
     cur.execute(f"SET work_mem = '{wm}'")
     cur.execute(f'EXPLAIN ANALYZE SELECT * FROM {T} ORDER BY amount, payment_date')
     print(wm, [r[0].strip() for r in cur.fetchall() if 'Sort Method' in r[0]])

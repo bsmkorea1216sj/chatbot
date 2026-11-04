@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-04 [claude] 10-1 기준본 43~47 Colab 슬라이드를 현재 노트북 코드·실측 결과 패널로 교체(colab_labs.py), 노트북 심화 work_mem 64kB·4MB·32MB 비교. 강의자가 39~47 약어 주석 삭제한 것 유지
 - 2026-11-04 [claude] 10-1 기준본 39~42 pgAdmin 실습 개선(단계 안내, 결과 예시 패널, 41번 payment→cd10_lab_payment 생성 코드) → CD10-1_PostgreSQL26.pptx (pgadmin_labs.py)
 - 2026-11-04 02:40 [claude] 10-2 초안 36장(GitLab 사례, 조인 방식 3가지, Colab 3장, 노트·약어 주석, 원본 오류 수정) → CD10-2_Index_Join(26).pptx, CD10-2_Colab_Lab(26).ipynb
 - 2026-11-04 [claude] 기준본 전체 약어·용어 주석 23개 페이지 추가(footnotes.py). 본문이 꽉 찬 15·18·20은 앞 페이지와 중복이라 생략, 10은 강의자 WAL 문구와 겹쳐 OS·SYS만 좌상단

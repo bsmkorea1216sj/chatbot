@@ -13,7 +13,6 @@
 ## 다음 할 일
 1. 강의자 10-2 검토 반영 (요청된 페이지만, 같은 파일에)
 2. 10-3 RAID 보강 (cd10-2/scripts 구조 복사: cd103_new.py·notes_103.py·build.py / 사례: AWS EBS와 RAID 0/1, RDS Multi-AZ)
-3. 10-1 43·44번 Colab 슬라이드 코드를 노트북(AWS 키 방식)과 맞추기 (강의자 확인 후)
 
 ## 확인 필요
 - 10-1 OpenAI 사례 출처(PGConf.dev 2025), 10-2 GitLab 문서(Adding database indexes) 원문 문구 확인
