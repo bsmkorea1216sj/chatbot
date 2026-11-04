@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-04 [claude] 10-3 보강 31장(EBS·RDS Multi-AZ 사례, Colab 실습3·심화, XOR 결과 패널, 노트 전체·기존 메모 보존, 약어 주석) → CD10-3_RAID(26).pptx, 새 노트북 CD10-3_Colab_Lab(26).ipynb (실습1·2·심화는 DB 없이 실행, 실측값 인사이트)
 - 2026-11-04 [claude] 강의자가 10-2를 원본(31장)으로 되돌려 업로드 → 그 파일 기준으로 build.py + labs_slides.py 재적용(36장) → CD10-2_Index_Join(26).pptx. Colab CD10-2_Colab_Lab(26).ipynb 유지
 - 2026-11-04 [claude] 10-2 노트북 재구성(각 실습 셀 자동 접속, 트리·비교 표 출력, 결과 읽는 법 셀) + 교안 29~35 단계 안내·예상 결과 패널로 노트북과 일치 (lab_cells.py, labs_slides.py) → CD10-2_Index_Join(26).pptx, CD10-2_Colab_Lab(26).ipynb
 - 2026-11-04 [claude] 10-1 기준본 46번을 노트북 실습3(오류 표·트리·1·2차 비교 표)과 일치, 47번 노트 예전 문구 수정 (sync_46_47.py) → CD10-1_PostgreSQL26.pptx

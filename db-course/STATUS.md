@@ -8,13 +8,14 @@
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정
   - Colab `CD10-2_Colab_Lab(26).ipynb`: 각 셀 자동 접속, 트리·비교 표 출력 — 실행 검증 전. 교안 29~35 결과 패널은 '예상 결과' → 실행 후 실측값으로 교체 필요
-- 10-3: 미착수 (원본 `CD10-3_RAID(26).pptx`, 내용은 원본)
+- 10-3 초안: `CD10-3_RAID(26).pptx` (31장) + `CD10-3_Colab_Lab(26).ipynb` (실습 3 RDS 조회만 실행 검증 전)
 
 ## 다음 할 일
 1. 강의자 10-2 검토 반영 (요청된 페이지만, 같은 파일에)
-2. 10-3 RAID 보강 (cd10-2/scripts 구조 복사: cd103_new.py·notes_103.py·build.py / 사례: AWS EBS와 RAID 0/1, RDS Multi-AZ)
+2. 강의자 10-3 검토 반영. 10-2·10-3 Colab 실행 후 '예상 결과' 패널을 실측값으로 교체
 
 ## 확인 필요
+- 10-3 AWS EBS RAID 문서(RAID 5·6 비권장 문구) 원문 확인
 - 10-1 OpenAI 사례 출처(PGConf.dev 2025), 10-2 GitLab 문서(Adding database indexes) 원문 문구 확인
 - RDS에 dvdrental 미설치 → 실습은 생성 테이블 사용. 드라이브 `dvdrental/dvdrental.tar` 복원 여부 강의자 결정
 - 10-2 17번(EXPLAIN) 원본 본문이 표 위쪽과 살짝 겹침 (원본부터 있던 배치)
