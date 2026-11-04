@@ -98,34 +98,71 @@ LAB2 = '''with c1.cursor() as cur:
                    FROM pg_stat_activity GROUP BY 1 ORDER BY 2 DESC""")
     display(pd.DataFrame(cur.fetchall(), columns=["backend_type", "n"]))'''
 
-LAB3 = '''c1.autocommit = True; cur = c1.cursor()
-for sql in ['SELEC * FROM film', 'SELECT * FROM filmx']:
-    try: cur.execute(sql)
-    except Exception as e: print(type(e).__name__, '→', str(e).splitlines()[0])
+LAB3 = '''import pandas as pd
+c1.autocommit = True; cur = c1.cursor()
 
-# dvdrental.payment가 없으면 실습용 테이블을 만들어 사용
+def walk(p, d=0):
+    yield d, p
+    for ch in p.get("Plans", []):
+        yield from walk(ch, d + 1)
+
+def name(n):
+    pre = n.get("Partial Mode", "") if n.get("Partial Mode") not in (None, "Simple") else ""
+    pre = (pre + " ") if pre else ("Parallel " if n.get("Parallel Aware") else "")
+    return pre + n["Node Type"]
+
+# ① 일부러 오류 내기: SQL 처리 몇 단계에서 멈추나?
+rows = []
+for sql, stage in [("SELEC * FROM film", "1단계 Parser (문법 검사)"),
+                   ("SELECT * FROM filmx", "2단계 Analyzer (의미 검사)")]:
+    try:
+        cur.execute(sql)
+    except Exception as e:
+        rows.append([sql, type(e).__name__, stage, str(e).splitlines()[0]])
+display(pd.DataFrame(rows, columns=["SQL", "오류", "멈춘 단계", "메시지"]))
+
+# ② 실습 테이블: payment가 없으면 20만 행 테이블을 한 번만 생성
 cur.execute("SELECT to_regclass('payment')")
-T = 'payment'
+T = "payment"
 if cur.fetchone()[0] is None:
-    T = 'cd10_lab_payment'
+    T = "cd10_lab_payment"
     cur.execute(f"""CREATE TABLE IF NOT EXISTS {T} AS
         SELECT g AS payment_id,
                round((random() * 10)::numeric, 2) AS amount,
                now() - g * interval '1 minute' AS payment_date
         FROM generate_series(1, 200000) AS g""")
     cur.execute(f"ANALYZE {T}")
-    print(f"ℹ️ payment 테이블이 없어 실습용 {T}(20만 행)을 사용합니다.")
 
-q = f'SELECT sum(amount) FROM {T} WHERE amount >= 3'
+# ③ 같은 SELECT를 두 번: Planner의 선택(계획)과 Executor의 결과(실제)
+q = f"SELECT sum(amount) FROM {T} WHERE amount >= 3"
+summary = []
 for i in (1, 2):
-    cur.execute('EXPLAIN (ANALYZE, BUFFERS) ' + q)
-    print(f'--- {i}차'); print('\\n'.join(r[0] for r in cur.fetchall()))'''
+    cur.execute("EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) " + q)
+    res = cur.fetchone()[0][0]
+    plan = res["Plan"]
+    if i == 1:
+        print(f"[실행계획 트리] 테이블 {T} · 아래(들여쓰기 깊은 쪽)부터 실행해 위로 올라옵니다")
+        for d, n in walk(plan):
+            rel = f" on {n['Relation Name']}" if "Relation Name" in n else ""
+            print("    " * d + f"└ {name(n)}{rel}  (추정 {n['Plan Rows']:,}행 · 실제 {n['Actual Rows']:,}행)")
+    scan = next(n for _, n in walk(plan) if "Scan" in n["Node Type"])
+    summary.append([f"{i}차", name(scan),
+                    f"{scan['Plan Rows']:,}", f"{scan['Actual Rows']:,}",
+                    plan.get("Shared Hit Blocks", 0), plan.get("Shared Read Blocks", 0),
+                    res.get("Planning", {}).get("Shared Read Blocks", 0),
+                    round(res["Execution Time"], 1)])
+display(pd.DataFrame(summary, columns=["실행", "스캔 방식(Planner 선택)", "추정 행(작업자당)", "실제 행(작업자당)",
+                                       "shared hit(메모리)", "shared read(새로 읽음)", "계획 단계 read", "실행시간(ms)"]))'''
 
-DEEP = '''for wm in ('64kB', '4MB', '32MB'):
+DEEP = '''rows = []
+for wm in ("64kB", "4MB", "32MB"):
     cur.execute(f"SET work_mem = '{wm}'")
-    cur.execute(f'EXPLAIN ANALYZE SELECT * FROM {T} ORDER BY amount, payment_date')
-    print(wm, [r[0].strip() for r in cur.fetchall() if 'Sort Method' in r[0]])
-cur.execute('RESET work_mem')'''
+    cur.execute(f"EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM {T} ORDER BY amount, payment_date")
+    sort = next(n for _, n in walk(cur.fetchone()[0][0]["Plan"]) if n["Node Type"] == "Sort")
+    where = "메모리" if sort.get("Sort Space Type") == "Memory" else "디스크"
+    rows.append([wm, sort.get("Sort Method"), f"{sort.get('Sort Space Used', 0):,}kB", where])
+cur.execute("RESET work_mem")
+display(pd.DataFrame(rows, columns=["work_mem", "정렬 방식", "사용 공간", "정렬 위치"]))'''
 
 cells = [
     md("# CD10-1 PostgreSQL Architecture · Colab 실습\n"
