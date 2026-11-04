@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-04 [claude] 10-3 약어·용어 주석 11장 추가(RAID, AWS·Aurora·AZ, 스트라이핑, 미러링, 패리티, N−1/N−2, RAID 10, 3-2-1 백업, 백업 vs 복제) (footnotes3.py) → CD10-3_RAID(26).pptx
 - 2026-11-04 [claude] 10-2 기준본(37장, 강의자가 18번 COSTs 추가) 약어·용어 주석 18장 추가 (footnotes2.py), 11·19번은 코드 상자 아래 배치 → CD10-2_Index_Join(26).pptx
 - 2026-11-04 [claude] 10-3 보강 31장(EBS·RDS Multi-AZ 사례, Colab 실습3·심화, XOR 결과 패널, 노트 전체·기존 메모 보존, 약어 주석) → CD10-3_RAID(26).pptx, 새 노트북 CD10-3_Colab_Lab(26).ipynb (실습1·2·심화는 DB 없이 실행, 실측값 인사이트)
 - 2026-11-04 [claude] 강의자가 10-2를 원본(31장)으로 되돌려 업로드 → 그 파일 기준으로 build.py + labs_slides.py 재적용(36장) → CD10-2_Index_Join(26).pptx. Colab CD10-2_Colab_Lab(26).ipynb 유지
