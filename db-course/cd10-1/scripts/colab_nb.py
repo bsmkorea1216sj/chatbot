@@ -99,11 +99,85 @@ LAB2 = '''with c1.cursor() as cur:
     display(pd.DataFrame(cur.fetchall(), columns=["backend_type", "n"]))'''
 
 LAB3 = '''import pandas as pd
+# ── 접속이 없으면 이 셀에서 바로 접속 (실습 1을 건너뛰어도 됨) ──
 if "connect" not in globals():
-    raise RuntimeError("먼저 맨 위 pip 셀과 '실습 1' 셀(AWS 인증·DB 접속)을 실행하세요.")
+    from google.colab import userdata
+    from getpass import getpass
+    from pathlib import Path
+    from botocore.config import Config
+    import boto3, psycopg2, requests
+    import pandas as pd
+    from IPython.display import display
+
+    def secret(*names, default=None):
+        for n in names:
+            try:
+                v = userdata.get(n)
+                if v and v.strip():
+                    return v.strip()
+            except Exception:
+                pass
+        return default
+
+    key = secret("AWS_ACCESS_KEY", "AWS_ACCESS_KEY_ID")
+    skey = secret("AWS_SECRET_KEY", "AWS_SECRET_ACCESS_KEY")
+    if not key or not skey:
+        raise ValueError("AWS_ACCESS_KEY와 AWS_SECRET_KEY 보안비밀 접근을 허용하세요.")
+    api = Config(connect_timeout=5, read_timeout=10, retries={"total_max_attempts": 1})
+    aws = boto3.Session(aws_access_key_id=key, aws_secret_access_key=skey,
+                        region_name=secret("AWS_REGION", "AWS_DEFAULT_REGION", default="ap-northeast-2"))
+    aws.client("sts", config=api).get_caller_identity()
+    print("✅ AWS 인증 완료", flush=True)
+
+    # 엔드포인트·포트: 보안비밀 → RDS 조회 → 기존 실습(CD9-3) 값 순서로 사용
+    INSTANCE_ID = secret("DB_INSTANCE_ID", default="postgresql-lab-01")
+    host, port = secret("DB_HOST"), secret("DB_PORT")
+    if not host or not port:
+        try:
+            ep = aws.client("rds", config=api).describe_db_instances(
+                DBInstanceIdentifier=INSTANCE_ID)["DBInstances"][0]["Endpoint"]
+            host, port = host or ep["Address"], port or ep["Port"]
+        except Exception as e:
+            print("RDS 조회 실패, 기존 실습 값 사용:", type(e).__name__)
+    host = host or "postgresql-lab-01.cf4icu2qu8n0.ap-northeast-2.rds.amazonaws.com"
+    port = int(port or 5433)
+    user = secret("DB_USER", "DB_USERNAME", default="postgres")
+    print(f"DB 엔드포인트: {host}:{port}", flush=True)
+
+    password = secret("DB_PASSWORD") or getpass("DB 비밀번호: ")
+    if not password:
+        raise ValueError("DB 비밀번호가 비어 있습니다.")
+
+    r = requests.get("https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem", timeout=(5, 15))
+    r.raise_for_status()
+    ca = Path("/content/rds-global-bundle.pem")
+    ca.write_bytes(r.content)
+
+    cfg = dict(host=host, port=port, user=user, password=password,
+               sslmode="verify-full", sslrootcert=str(ca), connect_timeout=10,
+               options="-c statement_timeout=30000 -c lock_timeout=5000")
+
+    dbname = secret("DB_NAME", default="dvdrental")
+    try:
+        psycopg2.connect(**cfg, dbname=dbname).close()
+    except psycopg2.OperationalError as e:
+        if "does not exist" not in str(e):
+            raise
+        print(f"⚠️ {dbname} DB가 없어 postgres로 접속합니다. (실습 3·심화는 dvdrental 필요)")
+        dbname = "postgres"
+    cfg["dbname"] = dbname
+
+    def connect(name="cd10_1_lab"):
+        c = psycopg2.connect(**cfg, application_name=name)
+        c.autocommit = True
+        return c
+
+    print(f"✅ DB 연결 완료 ({dbname}). 다음 실습 셀을 실행하세요.", flush=True)
 if "c1" not in globals() or c1.closed:
-    c1 = connect("cd10_1_session_A")      # 런타임이 다시 시작됐으면 자동 재연결
-c1.autocommit = True; cur = c1.cursor()
+    c1 = connect("cd10_1_session_A")
+c1.autocommit = True
+# ─────────────────────────────────────────────
+cur = c1.cursor()
 
 def walk(p, d=0):
     yield d, p

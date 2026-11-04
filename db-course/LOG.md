@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-04 [claude] CD10-1 Colab 실습2·3 셀에 자동 접속 내장(런타임 재시작 후 실습 1 없이 실행 가능)
 - 2026-11-04 [claude] CD10-1 Colab 실습3·심화를 요약 표 중심으로 개편(오류→단계 표, 실행계획 트리, 1·2차 비교 표, work_mem 표), 인사이트 셀 2개 재작성 (lab3_cells.py) → CD10-1_Colab_Lab(26).ipynb
 - 2026-11-04 [claude] 10-1 기준본 43~47 Colab 슬라이드를 현재 노트북 코드·실측 결과 패널로 교체(colab_labs.py), 노트북 심화 work_mem 64kB·4MB·32MB 비교. 강의자가 39~47 약어 주석 삭제한 것 유지
 - 2026-11-04 [claude] 10-1 기준본 39~42 pgAdmin 실습 개선(단계 안내, 결과 예시 패널, 41번 payment→cd10_lab_payment 생성 코드) → CD10-1_PostgreSQL26.pptx (pgadmin_labs.py)
