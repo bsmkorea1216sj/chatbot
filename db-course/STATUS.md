@@ -10,6 +10,17 @@
   - Colab `CD10-2_Colab_Lab(26).ipynb`: 각 셀 자동 접속, 트리·비교 표 출력 — 실행 검증 전. 교안 29~35 결과 패널은 '예상 결과' → 실행 후 실측값으로 교체 필요
 - 10-3 초안: `CD10-3_RAID(26).pptx` (31장) + `CD10-3_Colab_Lab(26).ipynb` (실습 3 RDS 조회만 실행 검증 전)
 
+## 기준본 파일 ID (같은 이름 파일이 있으니 ID로 작업)
+| 장 | 파일명 | ID |
+|---|---|---|
+| 10-1 교안 | CD10-1_PostgreSQL(26).pptx | 1QqGN8GBVzgOGRJjd7hlicKhei2oKa1th |
+| 10-1 Colab | CD10-1_Colab_Lab(26).ipynb | 1AfCr5c2lGQwY9CXWRxLIh5LJc3_6rPUm |
+| 10-2 교안 | CD10-2_Index_Join(26).pptx | 1D6ougQSnW71Glc1a1R9n8n82wMhmJWWk |
+| 10-2 Colab | CD10-2_Colab_Lab(26).ipynb | 1Jb5PZw_Qqo0aYcYQPySpeWM6IEKnT4KL |
+| 10-3 교안 | CD10-3_RAID(26).pptx | 1RODCGBNgtqHxTZiK-vBGZ8b7W85-ZNbg |
+| 10-3 Colab | CD10-3_Colab_Lab(26).ipynb | 1tZUZBWdqPzQIemlBHJ_gW5TyevIi0F-Q |
+- 주의: ID 14CJxBnMIlYSo1l6hwC7Z796F7-dVmvdr 도 이름이 CD10-1_PostgreSQL(26).pptx (예전 원본 내용) → 작업 대상 아님
+
 ## 다음 할 일
 1. 강의자 10-2 검토 반영 (요청된 페이지만, 같은 파일에)
 2. 강의자 10-3 검토 반영. 10-2·10-3 Colab 실행 후 '예상 결과' 패널을 실측값으로 교체

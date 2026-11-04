@@ -17,6 +17,10 @@
 4. 기존 파일·슬라이드·셀을 **함부로 지우지 않는다.** 강의자가 붙인 이미지·직접 고친 내용은 요청 없이 바꾸지 않는다.
 5. 드라이브 파일 수정은 rclone 사용: `rclone copyto <로컬> "gdrive:<파일명>" --drive-root-folder-id 1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS` (같은 이름이면 같은 파일·같은 링크로 갱신)
    - rclone 토큰은 각 AI 환경의 비밀값으로만 보관, 저장소에 절대 커밋 금지
+   - **같은 이름 파일이 여러 개일 수 있으므로 기준본은 파일 ID로 지정**한다 (STATUS.md의 ID 표 참고)
+     - 받기: `rclone backend copyid gdrive: <ID> <로컬>`
+     - 저장: Drive API `PATCH https://www.googleapis.com/upload/drive/v3/files/<ID>?uploadType=media` (rclone 토큰 사용)
+   - 저장 직전 수정 시각을 다시 확인해, 받은 뒤 강의자가 저장했으면 덮어쓰지 말고 다시 받아 적용한다
 6. 드라이브 파일 내용을 직접 덮어쓸 수 없는 환경이면(예: Claude Code 드라이브 연결은 새 파일 생성만 가능),
    새 파일을 만들지 말고 **바꿀 슬라이드·셀 내용만 강의자에게 제시**해 강의자가 붙여넣게 한다.
 
