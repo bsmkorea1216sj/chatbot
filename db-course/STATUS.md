@@ -19,6 +19,7 @@
 | 10-2 Colab | CD10-2_Colab_Lab(26).ipynb | 1Jb5PZw_Qqo0aYcYQPySpeWM6IEKnT4KL |
 | 10-3 교안 | CD10-3_RAID(26).pptx | 1RODCGBNgtqHxTZiK-vBGZ8b7W85-ZNbg |
 | 10-3 Colab | CD10-3_Colab_Lab(26).ipynb | 1tZUZBWdqPzQIemlBHJ_gW5TyevIi0F-Q |
+| 실습 DB 준비 | CD10_RDS_DB생성(26).ipynb | 1LCZQRDjSoCETzQZ_Has8BfoL2JMbD3Ic |
 - 주의: ID 14CJxBnMIlYSo1l6hwC7Z796F7-dVmvdr 도 이름이 CD10-1_PostgreSQL(26).pptx (예전 원본 내용) → 작업 대상 아님
 
 ## 다음 할 일
@@ -28,7 +29,7 @@
 ## 확인 필요
 - 10-3 AWS EBS RAID 문서(RAID 5·6 비권장 문구) 원문 확인
 - 10-1 OpenAI 사례 출처(PGConf.dev 2025), 10-2 GitLab 문서(Adding database indexes) 원문 문구 확인
-- RDS에 dvdrental 미설치 → 실습은 생성 테이블 사용. 드라이브 `dvdrental/dvdrental.tar` 복원 여부 강의자 결정
+- RDS에 dvdrental 미설치 → `CD10_RDS_DB생성(26).ipynb` 3번 셀로 복원 가능 (실행 검증 전)
 - 10-2 17번(EXPLAIN) 원본 본문이 표 위쪽과 살짝 겹침 (원본부터 있던 배치)
 
 ## 참고

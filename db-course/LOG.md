@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-04 [claude] 실습 DB 준비 노트북: AWS 키로 RDS 생성(없을 때만) + dvdrental.tar 복원 + 삭제 셀 (common/rds_setup_nb.py) → CD10_RDS_DB생성(26).ipynb (ID 1LCZQRDjSoCETzQZ_Has8BfoL2JMbD3Ic)
 - 2026-11-04 [claude] 10-1 11번 이미지(PostgreSQL ON AWS) 선 굵기 보정: 3배 확대 후 진한 선만 굵게 해 같은 위치로 교체 (ID로 저장)
 - 2026-11-04 [claude] 10-1 기준본(이름 변경: CD10-1_PostgreSQL(26).pptx, ID 1QqGN8…) 10번 화살표 8개 3pt·진한 남색·큰 화살촉, 11번 이미지 위 굵은 화살표 덧그림 (arrows_10_11.py, ID로 저장)
 - 2026-11-04 [claude] 10-3 약어·용어 주석 11장 추가(RAID, AWS·Aurora·AZ, 스트라이핑, 미러링, 패리티, N−1/N−2, RAID 10, 3-2-1 백업, 백업 vs 복제) (footnotes3.py) → CD10-3_RAID(26).pptx
