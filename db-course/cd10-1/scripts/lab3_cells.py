@@ -1,6 +1,10 @@
 """CD10-1 노트북 실습 3·심화·인사이트 셀 원고 (요약 표 중심). colab_patch.py와 colab_nb.py에서 사용."""
 
 LAB3 = '''import pandas as pd
+if "connect" not in globals():
+    raise RuntimeError("먼저 맨 위 pip 셀과 '실습 1' 셀(AWS 인증·DB 접속)을 실행하세요.")
+if "c1" not in globals() or c1.closed:
+    c1 = connect("cd10_1_session_A")      # 런타임이 다시 시작됐으면 자동 재연결
 c1.autocommit = True; cur = c1.cursor()
 
 def walk(p, d=0):
@@ -56,7 +60,9 @@ for i in (1, 2):
 display(pd.DataFrame(summary, columns=["실행", "스캔 방식(Planner 선택)", "추정 행(작업자당)", "실제 행(작업자당)",
                                        "shared hit(메모리)", "shared read(새로 읽음)", "계획 단계 read", "실행시간(ms)"]))'''
 
-DEEP = '''rows = []
+DEEP = '''if "T" not in globals():
+    raise RuntimeError("먼저 '실습 3' 셀을 실행하세요. (실습 테이블과 실행계획 함수를 준비합니다)")
+rows = []
 for wm in ("64kB", "4MB", "32MB"):
     cur.execute(f"SET work_mem = '{wm}'")
     cur.execute(f"EXPLAIN (ANALYZE, FORMAT JSON) SELECT * FROM {T} ORDER BY amount, payment_date")
