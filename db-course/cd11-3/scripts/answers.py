@@ -1,0 +1,22 @@
+"""CD11-3 미션 정답 키 (노트북 빈칸 → 정답). 교안 '미션 정답' 페이지와 자동 시험에 함께 사용."""
+ANS = {
+    "'대기번호 241': ''": "'대기번호 241': '주문'",
+    "'사업자번호 105-87-51367': ''": "'사업자번호 105-87-51367': '매장'",
+    "'(ICE)아메리카노 2,000×2': ''": "'(ICE)아메리카노 2,000×2': '주문상세'",
+    "'승인번호 21091497': ''": "'승인번호 21091497': '결제'",
+    "'부가세 500': ''": "'부가세 500': '계산값'",
+    "REFERENCES ____(order_id)": "REFERENCES orders(order_id)",
+    "REFERENCES ____(menu_id)": "REFERENCES menu(menu_id)",
+    "PRIMARY KEY (____, ____)": "PRIMARY KEY (order_id, menu_id)",
+    "REFERENCES ____(____)": "REFERENCES orders(order_id)",
+    "SELECT ____ AS total,": "SELECT SUM(m.unit_price * i.qty) AS total,",
+    "       ____ AS vat": "       SUM(m.unit_price * i.qty) / 11 AS vat",
+    "'B0001', ____, '카카오뱅크체크', '21091498', ____)": "'B0001', '카드', '카카오뱅크체크', '21091498', 3000)",
+    "'B0001', ____, NULL, NULL, ____)": "'B0001', '현금', NULL, NULL, 2500)",
+    "VALUES ('C001', ____)": "VALUES ('C001', 'F4')",
+    "GROUP BY ____": "GROUP BY f.field_name",
+    "CREATE TABLE members ( ____ );": "CREATE TABLE members (member_id TEXT PRIMARY KEY, card_no TEXT, points INTEGER);",
+    "CREATE TABLE point_logs ( ____ );": "CREATE TABLE point_logs (order_id TEXT REFERENCES orders(order_id), member_id TEXT REFERENCES members(member_id), earned INTEGER, PRIMARY KEY (order_id, member_id));",
+    "INSERT INTO members VALUES ( ____ );": "INSERT INTO members VALUES ('CJ5505', '010****5505', 384);",
+    "INSERT INTO point_logs VALUES ( ____ );": "INSERT INTO point_logs VALUES ('B0001', 'CJ5505', 28);",
+}

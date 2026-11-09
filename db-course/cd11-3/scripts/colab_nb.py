@@ -126,17 +126,33 @@ def code(t):
     return {"cell_type": "code", "metadata": {}, "execution_count": None, "outputs": [], "source": t}
 
 
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from missions import CHECKS, CELLS
+
+def mission(k):
+    head = md(CELLS[k][0]); head['metadata'] = {'id': 'mission_' + k}     # 교안 버튼 링크: #scrollTo=mission_<k>
+    return [head, code(CELLS[k][1])]
+
 cells = [
-    md("# CD11-3 데이터베이스 설계실습\n\n영수증과 상담 카드에서 도출한 개체를 테이블로 만들고, JOIN으로 원래 문서를 다시 만들어 설계가 맞는지 확인합니다. "
+    md("# CD11-3 데이터베이스 설계실습 · 교안과 함께 실행하기\n\n"
+       "교안의 각 실습 페이지에 있는 **'Colab 미션 N ▶'** 버튼과 이 노트북의 **🎯 미션 N** 셀이 짝입니다. "
+       "교안에서 개념을 보고 → 여기서 따라하기 셀을 실행하고 → 미션 셀의 `____` 빈칸을 채워 실행합니다. "
+       "결과가 **✅**이면 통과, **❌**이면 힌트를 보고 다시 시도하세요. **정답은 교안의 '미션 정답' 페이지**에 있습니다.\n\n"
+       "| 노트북 | 교안 |\n|---|---|\n| 1. 테이블 저장 · 미션 1·2 | 실습1 ①②, 실습1 정답 (7·8·10쪽) |\n"
+       "| 2. JOIN 영수증 · 미션 3 | 실습1 ③ (9쪽) |\n| 3. 단가 수정 · 미션 4 | 검증 (17쪽) |\n"
+       "| 4. 상담 카드 · 미션 5 | 실습2 ①②, 실습2 정답 (13~15쪽) |\n| 과제 | 실습 마무리 (18쪽) |\n\n"
        "Colab에 내장된 SQLite를 쓰므로 **AWS 접속이나 비밀번호가 필요 없습니다.** 셀을 위에서부터 실행하세요."),
-    md("## 1. 영수증을 5개 테이블에 저장하기\n매장·주문·메뉴·주문상세·결제 테이블을 PK·FK와 함께 만들고, 영수증의 값을 한 번씩만 넣습니다."),
-    md(INS1), code(SETUP),
-    md("## 2. JOIN으로 영수증 다시 만들기\n키로 표를 연결해 상품 줄을 복원하고, 합계·부가세는 저장하지 않고 계산합니다."),
-    md(INS2), code(RECEIPT),
-    md("## 3. 메뉴 단가를 한 번 바꾸면?\n정규화된 설계에서는 한 곳만 고치면 됩니다. 시연 뒤 원래 값으로 되돌립니다."),
-    md(INS3), code(UPDATE),
-    md("## 4. 실습2 · 상담 카드를 테이블로\n학생·상담·플래너·교육기관을 나누고, 여러 개 고르는 유학분야와 업무 진행 단계는 별도 표로 둡니다."),
-    md(INS4), code(FORM),
+    md("## 1. 따라하기 · 영수증을 5개 테이블에 저장하기  (교안 실습1 정답 · 10쪽)\n매장·주문·메뉴·주문상세·결제 테이블을 PK·FK와 함께 만들고, 영수증의 값을 한 번씩만 넣습니다."),
+    md(INS1), code(SETUP), code(CHECKS),
+    *mission('m1'), *mission('m2'),
+    md("## 2. 따라하기 · JOIN으로 영수증 다시 만들기  (교안 검증 · 17쪽)\n키로 표를 연결해 상품 줄을 복원하고, 합계·부가세는 저장하지 않고 계산합니다."),
+    md(INS2), code(RECEIPT), *mission('m3'),
+    md("## 3. 따라하기 · 메뉴 단가를 한 번 바꾸면?  (교안 실습1 ③ · 9쪽)\n정규화된 설계에서는 한 곳만 고치면 됩니다. 시연 뒤 원래 값으로 되돌립니다."),
+    md(INS3), code(UPDATE), *mission('m4'),
+    md("## 4. 따라하기 · 상담 카드를 테이블로  (교안 실습2 정답 · 15쪽)\n학생·상담·플래너·교육기관을 나누고, 여러 개 고르는 유학분야와 업무 진행 단계는 별도 표로 둡니다."),
+    md(INS4), code(FORM), *mission('m5'),
+    *mission('hw'),
 ]
 nb = {"cells": cells, "metadata": {"kernelspec": {"name": "python3", "display_name": "Python 3"}},
       "nbformat": 4, "nbformat_minor": 5}

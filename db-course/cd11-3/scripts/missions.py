@@ -1,0 +1,156 @@
+"""CD11-3 Colab 미션 셀 원고. 확인 함수는 힌트만 주고 정답은 교안 '미션 정답' 페이지에만 둔다."""
+
+CHECKS = r'''# 미션 확인 함수 (정답은 교안의 '미션 정답' 페이지에 있습니다)
+def _ok(cond, good, hint):
+    print(('✅ ' + good) if cond else ('❌ ' + hint))
+    return cond
+
+def check_m1(ans):
+    key = {'대기번호 241': '주문', '사업자번호 105-87-51367': '매장', '(ICE)아메리카노 2,000×2': '주문상세',
+           '승인번호 21091497': '결제', '부가세 500': '계산값'}
+    wrong = [k for k in key if ans.get(k, '').strip() != key[k]]
+    _ok(not wrong, '미션 1 통과: 5개 모두 맞았습니다.', f'{len(key) - len(wrong)}/5 정답 · 다시 볼 항목: {", ".join(wrong)}  (힌트: 교안 실습1 ① 표)')
+
+def check_m2(sql):
+    t = sqlite3.connect(':memory:'); t.execute('PRAGMA foreign_keys = ON')
+    t.executescript("""CREATE TABLE stores (store_id TEXT PRIMARY KEY);
+                       CREATE TABLE orders (order_id TEXT PRIMARY KEY, store_id TEXT REFERENCES stores(store_id));
+                       CREATE TABLE menu (menu_id TEXT PRIMARY KEY, unit_price INTEGER);""")
+    try:
+        t.executescript(sql)
+    except Exception as e:
+        return _ok(False, '', f'SQL 오류: {e}  (빈칸 ____ 를 모두 채웠는지 확인)')
+    pk = sorted(r[1] for r in t.execute('PRAGMA table_info(order_items)') if r[5])
+    fk_items = sorted((r[2], r[3]) for r in t.execute('PRAGMA foreign_key_list(order_items)'))
+    fk_pay = sorted((r[2], r[3], r[4]) for r in t.execute('PRAGMA foreign_key_list(payments)'))
+    _ok(pk == ['menu_id', 'order_id'], 'order_items 복합 PK 정답', 'order_items의 PK는 두 열을 함께 써야 합니다 (힌트: 교안 실습1 ②)')
+    _ok([x[0] for x in fk_items] == ['menu', 'orders'], 'order_items의 FK 두 개 정답', 'order_items는 어느 두 표를 가리켜야 할까요?')
+    _ok(fk_pay == [('orders', 'order_id', 'order_id')], 'payments의 FK 정답', 'payments는 어느 표의 어느 열을 가리켜야 할까요?')
+
+def check_m3(sql):
+    try:
+        r = db.execute(sql).fetchone()
+    except Exception as e:
+        return _ok(False, '', f'SQL 오류: {e}')
+    _ok(tuple(r) == (5500, 500), f'미션 3 통과: 합계 {r[0]:,} · 부가세 {r[1]:,} (영수증과 일치)',
+        f'결과 {tuple(r)} · 기대값은 영수증의 합계·부가세입니다 (힌트: 단가×수량, 부가세 = 합계 ÷ 11)')
+
+def check_m4():
+    n, s = db.execute("SELECT count(*), COALESCE(SUM(amount), 0) FROM payments WHERE order_id = 'B0001'").fetchone()
+    methods = sorted(r[0] for r in db.execute("SELECT method FROM payments WHERE order_id = 'B0001'"))
+    _ok(n == 2 and s == 5500 and methods == ['카드', '현금'], f'미션 4 통과: 결제 {n}행 · 합계 {s:,}원 = 주문 합계',
+        f'지금 결제 {n}행 · 합계 {s:,}원 · 수단 {methods} (힌트: 카드 3,000 + 현금 2,500 두 행)')
+
+def check_m5(sql):
+    fields = sorted(r[0] for r in db.execute("""SELECT f.field_name FROM consult_fields cf
+                    JOIN fields f ON f.field_code = cf.field_code WHERE cf.consult_id = 'C001'"""))
+    _ok(len(fields) == 3 and '대학(석사)' in fields, '대학(석사) 추가 정답 (C001 유학분야 3개)', f'C001 유학분야: {fields} (힌트: consult_fields에 한 행 추가)')
+    try:
+        rows = dict(db.execute(sql).fetchall())
+    except Exception as e:
+        return _ok(False, '', f'SQL 오류: {e}')
+    _ok(rows.get('대학(석사)') == 1 and rows.get('어학연수') == 1, f'GROUP BY 결과 정답: {rows}', f'결과 {rows} (힌트: 분야명별 상담 수)')
+
+def check_hw():
+    try:
+        pk = sorted(r[1] for r in db.execute('PRAGMA table_info(point_logs)') if r[5])
+        fks = sorted(r[2] for r in db.execute('PRAGMA foreign_key_list(point_logs)'))
+        pts = db.execute("SELECT points FROM members WHERE member_id = 'CJ5505'").fetchone()
+        earned = db.execute("SELECT earned FROM point_logs WHERE order_id = 'B0001'").fetchone()
+    except Exception as e:
+        return _ok(False, '', f'아직 표가 없습니다: {e}')
+    _ok(pk == ['member_id', 'order_id'], 'point_logs 복합 PK 정답', 'point_logs의 PK는? (힌트: 주문과 회원)')
+    _ok(fks == ['members', 'orders'], 'point_logs FK 정답', 'point_logs는 어느 두 표를 가리켜야 할까요?')
+    _ok(pts == (384,) and earned == (28,), '영수증 값 입력 정답 (가용 384 · 적립 28)', f'가용 포인트 {pts} · 적립 {earned} (힌트: 영수증 제휴카드 영역)')
+
+print('미션 확인 함수 준비 완료: check_m1 ~ check_m5, check_hw')'''
+
+M1 = r'''# 🎯 미션 1 · 영수증 값이 어느 개체에 속하는지 적으세요
+# 보기: 매장 / 주문 / 주문상세 / 메뉴 / 결제 / 계산값
+m1 = {
+    '대기번호 241': '',
+    '사업자번호 105-87-51367': '',
+    '(ICE)아메리카노 2,000×2': '',
+    '승인번호 21091497': '',
+    '부가세 500': '',
+}
+check_m1(m1)'''
+
+M2 = r'''# 🎯 미션 2 · ____ 빈칸을 채워 order_items와 payments 테이블을 완성하세요 (PK·FK)
+m2_sql = """
+CREATE TABLE order_items (
+    order_id TEXT REFERENCES ____(order_id),
+    menu_id  TEXT REFERENCES ____(menu_id),
+    qty      INTEGER NOT NULL,
+    PRIMARY KEY (____, ____)
+);
+CREATE TABLE payments (
+    payment_id TEXT PRIMARY KEY,
+    order_id   TEXT NOT NULL REFERENCES ____(____),
+    method     TEXT,
+    amount     INTEGER NOT NULL
+);
+"""
+check_m2(m2_sql)'''
+
+M3 = r'''# 🎯 미션 3 · 저장하지 않고 '계산'으로 합계와 부가세를 구하세요 (주문 B0001)
+m3_sql = """
+SELECT ____ AS total,
+       ____ AS vat
+FROM order_items i JOIN menu m ON m.menu_id = i.menu_id
+WHERE i.order_id = 'B0001'
+"""
+check_m3(m3_sql)'''
+
+M4 = r'''# 🎯 미션 4 · 손님이 카드 3,000원 + 현금 2,500원으로 나눠 냈다면? (교안 '검증' 토론)
+db.execute("SAVEPOINT m4")
+try:
+    db.execute("DELETE FROM payments WHERE order_id = 'B0001'")   # 기존 카드 5,500원 결제를 지우고
+    # 아래 두 줄을 완성해 결제 2행을 넣으세요: (결제ID, 주문ID, 수단, 카드사, 승인번호, 금액)
+    db.execute("INSERT INTO payments VALUES ('P02', 'B0001', ____, '카카오뱅크체크', '21091498', ____)")
+    db.execute("INSERT INTO payments VALUES ('P03', 'B0001', ____, NULL, NULL, ____)")
+    check_m4()
+except Exception as e:
+    print('❌ SQL 오류:', e, '→ 빈칸 ____ 를 수단(문자열)과 금액(숫자)으로 채우세요')
+finally:
+    db.execute("ROLLBACK TO m4"); db.execute("RELEASE m4")    # 확인 후 원래 결제로 되돌림'''
+
+M5 = r'''# 🎯 미션 5 · 상담 C001에 '대학(석사)'를 추가하고, 유학분야별 상담 수를 세세요
+try:
+    db.execute("INSERT OR IGNORE INTO consult_fields VALUES ('C001', ____)")   # 힌트: fields 표의 코드
+except Exception as e:
+    print('❌ SQL 오류:', e, '→ 대학(석사)의 분야코드를 문자열로 넣으세요')
+m5_sql = """
+SELECT f.field_name, COUNT(*)
+FROM consult_fields cf JOIN fields f ON f.field_code = cf.field_code
+GROUP BY ____
+"""
+check_m5(m5_sql)'''
+
+HW = r'''# 📝 과제 · 영수증의 제휴카드(CJ ONE) 영역을 테이블로 확장하세요
+#   - members: 회원ID(PK), 카드번호(마스킹), 가용 포인트
+#   - point_logs: 주문ID·회원ID(복합 PK, 각각 FK), 적립 포인트
+#   - 영수증 값: 회원 CJ5505 · 카드 010****5505 · 가용 384 · 주문 B0001 적립 28
+hw_sql = """
+DROP TABLE IF EXISTS point_logs;
+DROP TABLE IF EXISTS members;
+CREATE TABLE members ( ____ );
+CREATE TABLE point_logs ( ____ );
+INSERT INTO members VALUES ( ____ );
+INSERT INTO point_logs VALUES ( ____ );
+"""
+try:
+    db.executescript(hw_sql)
+except Exception as e:
+    print('❌ SQL 오류:', e, '→ 빈칸 ____ 를 열 정의와 값으로 채우세요')
+check_hw()'''
+
+# (미션 번호, 마크다운 제목, 코드)
+CELLS = {
+    'm1': ('## 🎯 미션 1 · 영수증 값 → 개체 분류  (교안 실습1 ① · 7쪽)\n빈 따옴표에 개체 이름을 적고 실행하세요. 결과가 ✅이면 통과입니다.', M1),
+    'm2': ('## 🎯 미션 2 · PK·FK 빈칸 채우기  (교안 실습1 ② · 8쪽 / 정답 표 10쪽)\n`____`를 표 이름·열 이름으로 바꾸고 실행하세요.', M2),
+    'm3': ('## 🎯 미션 3 · 합계·부가세를 계산으로 구하기  (교안 실습1 ③ · 9쪽)\n합계 = Σ(단가 × 수량), 부가세 = 합계 ÷ 11', M3),
+    'm4': ('## 🎯 미션 4 · 나눠 낸 결제 저장하기  (교안 검증 · 17쪽 토론)\n실행 후 자동으로 원래 결제로 되돌립니다.', M4),
+    'm5': ('## 🎯 미션 5 · 다중 선택과 GROUP BY  (교안 실습2 ② · 14쪽 / 정답 15쪽)', M5),
+    'hw': ('## 📝 과제 · 회원·포인트 테이블로 확장  (교안 실습 마무리 · 18쪽)\n제출: 이 셀의 SQL과 ✅ 결과 화면 캡처. 정답은 교안 \'미션 정답\' 페이지에서 확인합니다.', HW),
+}
