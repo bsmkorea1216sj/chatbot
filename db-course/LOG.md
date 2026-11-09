@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-09 [claude] 11-3 설계실습 보강(11-2 정규화 패턴): 10장 → 20장 (실습1 영수증 4장, 실습2 상담카드 3장, Colab·검증·마무리, SUMMARY 2줄, 노트·약어 주석) → [클라우드데이터베이스기초] 11-3_데이터베이스 설계실습(26).pptx + 새 노트북 CD11-3_Colab_설계실습.ipynb (SQLite, 로컬 실행 검증)
 - 2026-11-04 [claude] 실습 DB 준비 노트북: AWS 키로 RDS 생성(없을 때만) + dvdrental.tar 복원 + 삭제 셀 (common/rds_setup_nb.py) → CD10_RDS_DB생성(26).ipynb (ID 1LCZQRDjSoCETzQZ_Has8BfoL2JMbD3Ic)
 - 2026-11-04 [claude] 10-1 11번 이미지(PostgreSQL ON AWS) 선 굵기 보정: 3배 확대 후 진한 선만 굵게 해 같은 위치로 교체 (ID로 저장)
 - 2026-11-04 [claude] 10-1 기준본(이름 변경: CD10-1_PostgreSQL(26).pptx, ID 1QqGN8…) 10번 화살표 8개 3pt·진한 남색·큰 화살촉, 11번 이미지 위 굵은 화살표 덧그림 (arrows_10_11.py, ID로 저장)
