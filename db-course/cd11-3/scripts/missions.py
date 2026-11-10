@@ -3,6 +3,7 @@
 CHECKS = r'''#@title ✅ 미션 확인 도우미 — 코드는 보지 않아도 됩니다. 실행(▶)만 하세요 { display-mode: "form" }
 # 미션 확인 함수 (정답은 교안의 '미션 정답' 페이지와 각 페이지 하단에 있습니다)
 import sqlite3
+HELPER_V = 2   # 도우미 버전 (미션 셀이 확인)
 def _ok(cond, good, hint):
     print(('✅ ' + good) if cond else ('❌ ' + hint))
     return cond
@@ -77,8 +78,16 @@ def quiz(question, answer, page):
 
 def retry(fn, tries=3, page=''):
     # 미션: 틀리면 셀을 다시 실행하지 않고 그 자리에서 다시 입력
+    if fn.__name__ in ('mission3', 'mission4', 'mission5', 'homework') and 'db' not in globals():
+        print('⚠️ 아직 실습 DB가 없습니다. 이 미션 위의 따라하기 셀부터 차례로 실행(▶)한 뒤 이 셀을 다시 실행하세요.')
+        return False
     for attempt in range(1, tries + 1):
-        if fn():
+        try:
+            ok = fn()
+        except NameError as e:
+            print(f'⚠️ 아직 준비되지 않은 값이 있습니다 ({e}).\n   이 미션 위의 따라하기 셀부터 차례로 실행(▶)한 뒤 이 셀을 다시 실행하세요.')
+            return False
+        if ok:
             return True
         if attempt < tries:
             print(f'↻ 다시 입력하세요 ({attempt}/{tries})\n')
@@ -86,6 +95,14 @@ def retry(fn, tries=3, page=''):
     return False
 
 print('✅ 준비 완료: 미션 셀을 실행하면 입력칸이 나오고, 바로 결과를 확인합니다.')'''
+
+GUARD = r"""if globals().get('HELPER_V') != 2:   # 맨 위 ✅ 도우미 셀을 안 돌렸거나 옛 버전이면 자동으로 준비
+    try:
+        from google.colab import _message
+        exec(next(''.join(c['source']) for c in _message.blocking_request('get_ipynb')['ipynb']['cells'] if ''.join(c['source']).startswith('#@title ✅')))
+    except Exception:
+        print('⚠️ 맨 위 ✅ 미션 확인 도우미 셀을 먼저 실행(▶)하세요.'); raise SystemExit
+"""
 
 M1 = r'''# 🎯 미션 1 · 실행하면 입력칸이 나옵니다. 각 영수증 값이 어느 개체인지 입력하세요 (틀리면 바로 다시 입력)
 # 보기: 매장 / 주문 / 주문상세 / 메뉴 / 결제 / 계산값
@@ -177,12 +194,21 @@ INSERT INTO point_logs VALUES ({vals_pl});"""
 retry(homework, page=20)'''
 
 # 예측 퀴즈: 따라하기 셀 바로 앞에서 결과를 먼저 예측하고 바로 확인
-Q1 = r"""quiz('영수증 1장을 몇 개의 테이블로 나눌까요? (숫자)', 5, 10)"""
-Q2 = r"""quiz('주문 B0001의 합계는 얼마일까요? (숫자)', 5500, 17)"""
-Q3 = r"""quiz('ICE 아메리카노 단가를 2,200원으로 바꾸면 합계는 얼마가 될까요? (숫자)', 5900, 9)"""
-Q4 = r"""quiz('유학분야를 2개 고른 상담 1건은 consult_fields에 몇 행으로 저장될까요? (숫자)', 2, 14)"""
+Q1 = r"""# 🔎 예측 퀴즈 · 아래 따라하기 셀을 실행하기 전에 결과를 먼저 맞혀 보세요
+quiz('영수증 1장을 몇 개의 테이블로 나눌까요? (숫자)', 5, 10)"""
+Q2 = r"""# 🔎 예측 퀴즈 · 아래 따라하기 셀을 실행하기 전에 결과를 먼저 맞혀 보세요
+quiz('주문 B0001의 합계는 얼마일까요? (숫자)', 5500, 17)"""
+Q3 = r"""# 🔎 예측 퀴즈 · 아래 따라하기 셀을 실행하기 전에 결과를 먼저 맞혀 보세요
+quiz('ICE 아메리카노 단가를 2,200원으로 바꾸면 합계는 얼마가 될까요? (숫자)', 5900, 9)"""
+Q4 = r"""# 🔎 예측 퀴즈 · 아래 따라하기 셀을 실행하기 전에 결과를 먼저 맞혀 보세요
+quiz('유학분야를 2개 고른 상담 1건은 consult_fields에 몇 행으로 저장될까요? (숫자)', 2, 14)"""
 
 # (미션 번호, 마크다운 제목, 코드)
+def _g(src):  # 머리 주석 1줄 뒤에 GUARD 삽입
+    head, rest = src.split('\n', 1)
+    return head + '\n' + GUARD + rest
+M1, M2, M3, M4, M5, HW, Q1, Q2, Q3, Q4 = map(_g, (M1, M2, M3, M4, M5, HW, Q1, Q2, Q3, Q4))
+
 CELLS = {
     'm1': ('## 🎯 미션 1 · 영수증 값 → 개체 분류  (교안 실습1 ① · 7쪽)\n셀을 실행하면 나오는 입력칸에 답을 입력하세요. 결과가 ✅이면 통과입니다.', M1),
     'm2': ('## 🎯 미션 2 · PK·FK 정하기  (교안 실습1 ② · 8쪽 / 정답 표 10쪽)\n셀을 실행하면 나오는 입력칸 4개에 표 이름·열 이름을 입력하세요.', M2),
