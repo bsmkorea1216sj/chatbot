@@ -19,7 +19,7 @@ def check_m2(sql):
     try:
         t.executescript(sql)
     except Exception as e:
-        return _ok(False, '', f'SQL 오류: {e}  (빈칸 ____ 를 모두 채웠는지 확인)')
+        return _ok(False, '', f'SQL 오류: {e}  (입력한 표·열 이름을 확인하세요)')
     pk = sorted(r[1] for r in t.execute('PRAGMA table_info(order_items)') if r[5])
     fk_items = sorted((r[2], r[3]) for r in t.execute('PRAGMA foreign_key_list(order_items)'))
     fk_pay = sorted((r[2], r[3], r[4]) for r in t.execute('PRAGMA foreign_key_list(payments)'))
@@ -65,92 +65,112 @@ def check_hw():
 
 print('미션 확인 함수 준비 완료: check_m1 ~ check_m5, check_hw')'''
 
-M1 = r'''# 🎯 미션 1 · 영수증 값이 어느 개체에 속하는지 적으세요
+M1 = r'''# 🎯 미션 1 · 실행하면 입력칸이 나옵니다. 각 영수증 값이 어느 개체인지 입력하세요
 # 보기: 매장 / 주문 / 주문상세 / 메뉴 / 결제 / 계산값
-m1 = {
-    '대기번호 241': '',
-    '사업자번호 105-87-51367': '',
-    '(ICE)아메리카노 2,000×2': '',
-    '승인번호 21091497': '',
-    '부가세 500': '',
-}
+items = ['대기번호 241', '사업자번호 105-87-51367', '(ICE)아메리카노 2,000×2', '승인번호 21091497', '부가세 500']
+m1 = {k: input(f"'{k}' → 어느 개체? (매장/주문/주문상세/메뉴/결제/계산값): ").strip() for k in items}
 check_m1(m1)'''
 
-M2 = r'''# 🎯 미션 2 · ____ 빈칸을 채워 order_items와 payments 테이블을 완성하세요 (PK·FK)
-m2_sql = """
+M2 = r'''# 🎯 미션 2 · 실행하면 입력칸 4개가 나옵니다. 표 이름·열 이름만 입력하세요 (따옴표 없이)
+t1 = input('① order_items.order_id 가 가리킬 표 이름: ').strip()
+t2 = input('② order_items.menu_id 가 가리킬 표 이름: ').strip()
+pk = input('③ order_items 의 기본키(PK) 열 2개 (쉼표로 구분): ').strip()
+fk = input("④ payments.order_id 가 가리킬 '표(열)' 예: 표이름(열이름): ").strip()
+m2_sql = f"""
 CREATE TABLE order_items (
-    order_id TEXT REFERENCES ____(order_id),
-    menu_id  TEXT REFERENCES ____(menu_id),
+    order_id TEXT REFERENCES {t1}(order_id),
+    menu_id  TEXT REFERENCES {t2}(menu_id),
     qty      INTEGER NOT NULL,
-    PRIMARY KEY (____, ____)
+    PRIMARY KEY ({pk})
 );
 CREATE TABLE payments (
     payment_id TEXT PRIMARY KEY,
-    order_id   TEXT NOT NULL REFERENCES ____(____),
+    order_id   TEXT NOT NULL REFERENCES {fk},
     method     TEXT,
     amount     INTEGER NOT NULL
 );
 """
+print(m2_sql)
 check_m2(m2_sql)'''
 
-M3 = r'''# 🎯 미션 3 · 저장하지 않고 '계산'으로 합계와 부가세를 구하세요 (주문 B0001)
-m3_sql = """
-SELECT ____ AS total,
-       ____ AS vat
+M3 = r'''# 🎯 미션 3 · 실행하면 입력칸 2개가 나옵니다. 합계와 부가세를 구하는 식을 입력하세요
+# 사용할 수 있는 열: m.unit_price(단가), i.qty(수량) · 함수: SUM( )
+total_expr = input('① 합계(total)를 구하는 식: ').strip()
+vat_expr   = input('② 부가세(vat)를 구하는 식: ').strip()
+m3_sql = f"""
+SELECT {total_expr} AS total,
+       {vat_expr} AS vat
 FROM order_items i JOIN menu m ON m.menu_id = i.menu_id
 WHERE i.order_id = 'B0001'
 """
+print(m3_sql)
 check_m3(m3_sql)'''
 
-M4 = r'''# 🎯 미션 4 · 손님이 카드 3,000원 + 현금 2,500원으로 나눠 냈다면? (교안 '검증' 토론)
+M4 = r'''# 🎯 미션 4 · 손님이 나눠 낸 결제를 저장합니다 (교안 17쪽 '검증' 토론)
+# 실행하면 입력칸 4개가 나옵니다. 수단은 글자(예: 카드), 금액은 숫자만 입력하세요
+m1_method = input('① 첫 번째 결제 수단: ').strip()
+m1_amount = input('① 첫 번째 결제 금액(숫자): ').strip()
+m2_method = input('② 두 번째 결제 수단: ').strip()
+m2_amount = input('② 두 번째 결제 금액(숫자): ').strip()
 db.execute("SAVEPOINT m4")
 try:
-    db.execute("DELETE FROM payments WHERE order_id = 'B0001'")   # 기존 카드 5,500원 결제를 지우고
-    # 아래 두 줄을 완성해 결제 2행을 넣으세요: (결제ID, 주문ID, 수단, 카드사, 승인번호, 금액)
-    db.execute("INSERT INTO payments VALUES ('P02', 'B0001', ____, '카카오뱅크체크', '21091498', ____)")
-    db.execute("INSERT INTO payments VALUES ('P03', 'B0001', ____, NULL, NULL, ____)")
+    db.execute("DELETE FROM payments WHERE order_id = 'B0001'")      # 기존 카드 5,500원 결제를 지우고
+    db.execute("INSERT INTO payments VALUES ('P02', 'B0001', ?, '카카오뱅크체크', '21091498', ?)", (m1_method, int(m1_amount)))
+    db.execute("INSERT INTO payments VALUES ('P03', 'B0001', ?, NULL, NULL, ?)", (m2_method, int(m2_amount)))
     check_m4()
+except ValueError:
+    print('❌ 금액은 숫자만 입력하세요 (예: 3000)')
 except Exception as e:
-    print('❌ SQL 오류:', e, '→ 빈칸 ____ 를 수단(문자열)과 금액(숫자)으로 채우세요')
+    print('❌ 오류:', e)
 finally:
-    db.execute("ROLLBACK TO m4"); db.execute("RELEASE m4")    # 확인 후 원래 결제로 되돌림'''
+    db.execute("ROLLBACK TO m4"); db.execute("RELEASE m4")       # 확인 후 원래 결제로 되돌림'''
 
 M5 = r'''# 🎯 미션 5 · 상담 C001에 '대학(석사)'를 추가하고, 유학분야별 상담 수를 세세요
+print('유학분야 코드표:', db.execute('SELECT field_code, field_name FROM fields').fetchall())
+code_in = input("① '대학(석사)'의 분야코드: ").strip()
+group_in = input('② 분야명별로 묶을 열 (GROUP BY 뒤에 올 열): ').strip()
 try:
-    db.execute("INSERT OR IGNORE INTO consult_fields VALUES ('C001', ____)")   # 힌트: fields 표의 코드
-except Exception as e:
-    print('❌ SQL 오류:', e, '→ 대학(석사)의 분야코드를 문자열로 넣으세요')
-m5_sql = """
+    db.execute("INSERT OR IGNORE INTO consult_fields VALUES ('C001', ?)", (code_in,))
+except sqlite3.IntegrityError:
+    print(f"❌ '{code_in}'은(는) 코드표에 없는 분야코드입니다. 위 코드표에서 '대학(석사)'의 코드를 찾아 입력하세요")
+m5_sql = f"""
 SELECT f.field_name, COUNT(*)
 FROM consult_fields cf JOIN fields f ON f.field_code = cf.field_code
-GROUP BY ____
+GROUP BY {group_in}
 """
+print(m5_sql)
 check_m5(m5_sql)'''
 
 HW = r'''# 📝 과제 · 영수증의 제휴카드(CJ ONE) 영역을 테이블로 확장하세요
 #   - members: 회원ID(PK), 카드번호(마스킹), 가용 포인트
 #   - point_logs: 주문ID·회원ID(복합 PK, 각각 FK), 적립 포인트
 #   - 영수증 값: 회원 CJ5505 · 카드 010****5505 · 가용 384 · 주문 B0001 적립 28
-hw_sql = """
+# 실행하면 입력칸 4개가 나옵니다. 괄호 ( ) 안에 들어갈 내용만 한 줄로 입력하세요
+cols_m  = input('① members 열 정의  예: member_id TEXT PRIMARY KEY, ... : ').strip()
+cols_pl = input('② point_logs 열 정의 (FK·복합 PK 포함): ').strip()
+vals_m  = input("③ members 에 넣을 값  예: 'CJ5505', ... : ").strip()
+vals_pl = input('④ point_logs 에 넣을 값: ').strip()
+hw_sql = f"""
 DROP TABLE IF EXISTS point_logs;
 DROP TABLE IF EXISTS members;
-CREATE TABLE members ( ____ );
-CREATE TABLE point_logs ( ____ );
-INSERT INTO members VALUES ( ____ );
-INSERT INTO point_logs VALUES ( ____ );
+CREATE TABLE members ({cols_m});
+CREATE TABLE point_logs ({cols_pl});
+INSERT INTO members VALUES ({vals_m});
+INSERT INTO point_logs VALUES ({vals_pl});
 """
+print(hw_sql)
 try:
     db.executescript(hw_sql)
 except Exception as e:
-    print('❌ SQL 오류:', e, '→ 빈칸 ____ 를 열 정의와 값으로 채우세요')
+    print('❌ SQL 오류:', e)
 check_hw()'''
 
 # (미션 번호, 마크다운 제목, 코드)
 CELLS = {
-    'm1': ('## 🎯 미션 1 · 영수증 값 → 개체 분류  (교안 실습1 ① · 7쪽)\n빈 따옴표에 개체 이름을 적고 실행하세요. 결과가 ✅이면 통과입니다.', M1),
-    'm2': ('## 🎯 미션 2 · PK·FK 빈칸 채우기  (교안 실습1 ② · 8쪽 / 정답 표 10쪽)\n`____`를 표 이름·열 이름으로 바꾸고 실행하세요.', M2),
+    'm1': ('## 🎯 미션 1 · 영수증 값 → 개체 분류  (교안 실습1 ① · 7쪽)\n셀을 실행하면 나오는 입력칸에 답을 입력하세요. 결과가 ✅이면 통과입니다.', M1),
+    'm2': ('## 🎯 미션 2 · PK·FK 정하기  (교안 실습1 ② · 8쪽 / 정답 표 10쪽)\n셀을 실행하면 나오는 입력칸 4개에 표 이름·열 이름을 입력하세요.', M2),
     'm3': ('## 🎯 미션 3 · 합계·부가세를 계산으로 구하기  (교안 실습1 ③ · 9쪽)\n합계 = Σ(단가 × 수량), 부가세 = 합계 ÷ 11', M3),
-    'm4': ('## 🎯 미션 4 · 나눠 낸 결제 저장하기  (교안 검증 · 17쪽 토론)\n실행 후 자동으로 원래 결제로 되돌립니다.', M4),
+    'm4': ('## 🎯 미션 4 · 나눠 낸 결제 저장하기  (교안 검증 · 17쪽 토론)\n입력칸에 결제 수단과 금액을 넣으세요. 확인 후 자동으로 원래 결제로 되돌립니다.', M4),
     'm5': ('## 🎯 미션 5 · 다중 선택과 GROUP BY  (교안 실습2 ② · 14쪽 / 정답 15쪽)', M5),
     'hw': ('## 📝 과제 · 회원·포인트 테이블로 확장  (교안 실습 마무리 · 18쪽)\n제출: 이 셀의 SQL과 ✅ 결과 화면 캡처. 정답은 교안 \'미션 정답\' 페이지에서 확인합니다.', HW),
 }
