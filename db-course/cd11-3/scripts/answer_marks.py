@@ -7,11 +7,11 @@ from pptx.dml.color import RGBColor
 MARKS = {
     7: '정답 · 대기번호→주문 · 사업자번호→매장 · (ICE)아메리카노→주문상세 · 승인번호→결제 · 부가세→계산값',
     8: '정답 · ① orders  ② menu  ③ order_id, menu_id  ④ orders(order_id)',
-    9: '정답 · ① SUM(m.unit_price * i.qty)  ② SUM(m.unit_price * i.qty) / 11',
-    10: '정답 · ① orders  ② menu  ③ order_id, menu_id  ④ orders(order_id)',
-    14: '정답 · ① F4 (대학(석사))  ② f.field_name',
+    9: '정답 · ① SUM(m.unit_price * i.qty)  ② SUM(m.unit_price * i.qty) / 11  · 🔎퀴즈 5,900',
+    10: '정답 · ① orders  ② menu  ③ order_id, menu_id  ④ orders(order_id)  · 🔎퀴즈 5개',
+    14: '정답 · ① F4 (대학(석사))  ② f.field_name  · 🔎퀴즈 2행',
     15: '정답 · ① F4 (대학(석사))  ② f.field_name',
-    17: '정답 · ① 카드 · 3000  ② 현금 · 2500',
+    17: '정답 · ① 카드 · 3000  ② 현금 · 2500  · 🔎퀴즈 5,500',
     18: '정답 · 과제 입력값 ①~④는 20쪽 (members · point_logs 열 정의와 값)',
 }
 prs = Presentation(sys.argv[1])
