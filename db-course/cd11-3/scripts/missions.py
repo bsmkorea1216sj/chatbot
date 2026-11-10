@@ -42,7 +42,7 @@ def check_m3(sql):
 def check_m4():
     n, s = db.execute("SELECT count(*), COALESCE(SUM(amount), 0) FROM payments WHERE order_id = 'B0001'").fetchone()
     methods = sorted(r[0] for r in db.execute("SELECT method FROM payments WHERE order_id = 'B0001'"))
-    return _ok(n == 2 and s == 5500 and methods == ['카드', '현금'], f'미션 4 통과: 결제 {n}행 · 합계 {s:,}원 = 주문 합계',
+    return _ok(n == 2 and s == 5500 and methods == ['카드', '현금'], f'미션 5 통과: 결제 {n}행 · 합계 {s:,}원 = 주문 합계',
         f'지금 결제 {n}행 · 합계 {s:,}원 · 수단 {methods} (힌트: 카드 3,000 + 현금 2,500 두 행)')
 
 def check_m5(sql):
@@ -135,7 +135,7 @@ FROM order_items i JOIN menu m ON m.menu_id = i.menu_id WHERE i.order_id = 'B000
     return check_m3(sql)
 retry(mission3, page=9)'''
 
-M4 = r'''# 🎯 미션 4 · 손님이 나눠 낸 결제를 저장합니다 (교안 17쪽 '검증' 토론)
+M4 = r'''# 🎯 미션 5 · 손님이 나눠 낸 결제를 저장합니다 (교안 17쪽 '검증' 토론)
 # 수단은 글자(예: 카드), 금액은 숫자만 입력하세요. 확인 후 원래 결제로 자동 복원
 def mission4():
     m1, a1 = input('① 첫 번째 결제 수단: ').strip(), input('① 첫 번째 결제 금액(숫자): ').strip()
@@ -152,7 +152,7 @@ def mission4():
         db.execute("ROLLBACK TO m4"); db.execute("RELEASE m4")
 retry(mission4, page=17)'''
 
-M5 = r'''# 🎯 미션 5 · 상담 C001에 '대학(석사)'를 추가하고, 유학분야별 상담 수를 세세요 (틀리면 바로 다시 입력)
+M5 = r'''# 🎯 미션 4 · 상담 C001에 '대학(석사)'를 추가하고, 유학분야별 상담 수를 세세요 (틀리면 바로 다시 입력)
 print('유학분야 코드표:', db.execute('SELECT field_code, field_name FROM fields').fetchall())
 def mission5():
     code_in = input("① '대학(석사)'의 분야코드: ").strip()
@@ -213,7 +213,7 @@ CELLS = {
     'm1': ('## 🎯 미션 1 · 영수증 값 → 개체 분류  (교안 실습1 ① · 7쪽)\n셀을 실행하면 나오는 입력칸에 답을 입력하세요. 결과가 ✅이면 통과입니다.', M1),
     'm2': ('## 🎯 미션 2 · PK·FK 정하기  (교안 실습1 ② · 8쪽 / 정답 표 10쪽)\n셀을 실행하면 나오는 입력칸 4개에 표 이름·열 이름을 입력하세요.', M2),
     'm3': ('## 🎯 미션 3 · 합계·부가세를 계산으로 구하기  (교안 실습1 ③ · 9쪽)\n합계 = Σ(단가 × 수량), 부가세 = 합계 ÷ 11', M3),
-    'm4': ('## 🎯 미션 4 · 나눠 낸 결제 저장하기  (교안 검증 · 17쪽 토론)\n입력칸에 결제 수단과 금액을 넣으세요. 확인 후 자동으로 원래 결제로 되돌립니다.', M4),
-    'm5': ('## 🎯 미션 5 · 다중 선택과 GROUP BY  (교안 실습2 ② · 14쪽 / 정답 15쪽)', M5),
+    'm4': ('## 🎯 미션 4 · 다중 선택과 GROUP BY  (교안 실습2 ② · 14쪽 / 정답 15쪽)', M5),
+    'm5': ('## 🎯 미션 5 · 나눠 낸 결제 저장하기  (교안 검증 · 17쪽 토론)\n입력칸에 결제 수단과 금액을 넣으세요. 확인 후 자동으로 원래 결제로 되돌립니다.', M4),
     'hw': ('## 📝 과제 · 회원·포인트 테이블로 확장  (교안 실습 마무리 · 18쪽)\n제출: 이 셀의 SQL과 ✅ 결과 화면 캡처. 정답은 교안 \'미션 정답\' 페이지에서 확인합니다.', HW),
 }
