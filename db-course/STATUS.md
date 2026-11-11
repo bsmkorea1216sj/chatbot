@@ -1,6 +1,6 @@
 # STATUS (작업 시작 시 이 파일만 먼저 읽기)
 
-**마지막 갱신:** 2026-11-11 · claude
+**마지막 갱신:** 2026-11-11 · codex
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
 ## 현재 상태
@@ -8,8 +8,9 @@
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정
   - Colab `CD10-2_Colab_Lab(26).ipynb`: 각 셀 자동 접속, 트리·비교 표 출력 — 실행 검증 전. 교안 29~35 결과 패널은 '예상 결과' → 실행 후 실측값으로 교체 필요
-- 11-3 초안: `[클라우드데이터베이스기초] 11-3_데이터베이스 설계실습(26).pptx` (22장, 11-2 정규화 패턴, 미션 정답 19·20쪽) + `CD11-3_Colab_설계실습.ipynb` (SQLite, 확인 도우미 코드 숨김, 미션1~5·과제(교안 순서: 상담=미션4 14쪽, 결제=미션5 17쪽) input() 입력→즉시 ✅/❌·3회 재입력, 도우미 미실행 시 자동 불러옴, 🔎예측 퀴즈 4개, 정답은 교안 버튼 아래·19·20쪽). 11-1·11-2는 Codex/강의자 작업본(이 저장소에 기록 없음)
+- 11-3 초안: `[클라우드데이터베이스기초] 11-3_데이터베이스 설계실습(26).pptx` (22장, 11-2 정규화 패턴, 미션 정답 19·20쪽) + `CD11-3_Colab_설계실습.ipynb` (SQLite, 확인 도우미 코드 숨김, 미션1~5·과제(교안 순서: 상담=미션4 14쪽, 결제=미션5 17쪽) input() 입력→즉시 ✅/❌·3회 재입력, 도우미 미실행 시 자동 불러옴, 🔎예측 퀴즈 4개, 정답은 교안 버튼 아래·19·20쪽).
 - 11-1 보강본 `…11-1_데이터베이스 설계 개요(26)_보강.pptx` (48장): Claude가 5·6·9·12·25·29·30·31쪽 보강 → 상세는 `db-course/HANDOFF.md` (Codex 인수인계)
+- 11-2 정규화(26) 기준본(41장): 27쪽의 보유기술과 프로젝트별 실제 사용을 사원 10 예시로 구분하고, 28~30쪽 무손실 분해 검증과 연결. 기존 Drive ID 반영·렌더링 확인.
 - ⚠️ 11-3 Colab은 옛 탭이 열려 있으면 자동 저장으로 덮어씀 → 업로드 후 탭 새로 열기
 - 10-3 초안: `CD10-3_RAID(26).pptx` (31장) + `CD10-3_Colab_Lab(26).ipynb` (실습 3 RDS 조회만 실행 검증 전)
 
@@ -23,7 +24,7 @@
 | 10-3 교안 | CD10-3_RAID(26).pptx | 1RODCGBNgtqHxTZiK-vBGZ8b7W85-ZNbg |
 | 10-3 Colab | CD10-3_Colab_Lab(26).ipynb | 1tZUZBWdqPzQIemlBHJ_gW5TyevIi0F-Q |
 | 실습 DB 준비 | CD10_RDS_DB생성(26).ipynb | 1LCZQRDjSoCETzQZ_Has8BfoL2JMbD3Ic |
-| 11-2 패턴(강의자) | [클라우드데이터베이스기초] 11-2_정규화.pptx | 1kpLd9222ZqByf4NxcInQsgOhGEw08dgQ |
+| 11-2 교안 | [클라우드데이터베이스기초] 11-2_정규화(26).pptx | 1kpLd9222ZqByf4NxcInQsgOhGEw08dgQ |
 | 11-3 교안 | [클라우드데이터베이스기초] 11-3_데이터베이스 설계실습(26).pptx | 16mLq0QLxmGUH1mR2QWdsGam0tufQbYum |
 | 11-1 교안(보강) | [클라우드데이터베이스기초] 11-1_데이터베이스 설계 개요(26)_보강.pptx | 1zYS43RH1IpcrfJiDsCbz95kl_Wf2du2F |
 | 11-1 Colab | CD11-1_Colab_Lab(26).ipynb | 1fQ--R38hR6exXmFtyl8wvDKpZNn9DSP1 |
