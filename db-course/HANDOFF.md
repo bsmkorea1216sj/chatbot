@@ -9,6 +9,7 @@
 |---|---|---|
 | [클라우드데이터베이스기초] 11-1_데이터베이스 설계 개요(26)_보강.pptx | `1zYS43RH1IpcrfJiDsCbz95kl_Wf2du2F` | 48장, 강의자가 Google Slides에서 계속 편집 중 |
 | [클라우드데이터베이스기초] 11-3_데이터베이스 설계실습(26).pptx | `16mLq0QLxmGUH1mR2QWdsGam0tufQbYum` | 22장 |
+| CD11-1_Colab_Lab(26).ipynb | `1fQ--R38hR6exXmFtyl8wvDKpZNn9DSP1` | 교안 42~46쪽과 1:1, `colab_sync.py`로 수정(재실행 검증) |
 | CD11-3_Colab_설계실습.ipynb | `1mJEtXxBEUK9THq9pVF607BVqO_vDO5Qg` | 30셀, SQLite |
 
 ## 2. 11-1 보강본에서 Claude가 바꾼 페이지 (현재 쪽 번호 기준)
@@ -20,6 +21,7 @@
 | 25 | **의미 객체 모델 vs ER 모델**: 도서관 대출을 Chen ER / Kroenke 의미 객체 다이어그램으로 나란히 + 비교 표 | `slide_som_vs_er.py` |
 | 29 | 적용 사례 | 주문·결제의 **개념(Palantir Ontology)·논리(Google Knowledge Catalog)·물리(AWS DynamoDB)** 3단 행 + 관계형 대응 SQL + 단계별 토론 | `slide_case_levels.py` |
 | 39 | Palantir Ontology: 현실 업무를 데이터 모델로 → **개념·논리·물리** 3단 행 추가, 빈 글머리표 제거, 노트 교체 | `slide_ontology_levels.py` |
+| 40·41·42~47 | 교안↔Colab 흐름 맞춤: 40·41쪽 노트 교정, Colab 도입 42 · 준비 43 · 실습1~3 44~46 · 정리 47(이동) · Q&A 48, Colab 슬라이드 코드 동기화 | `deck_colab_sync.py` |
 | 30·31 | 실습 예제 · 동네 도서관 대출(개념→논리→물리 문제, 카드 아래 작은 정답) / 정답 pgAdmin SQL(주석=정답 설명). 강의자가 18쪽 뒤 → 30·31쪽으로 옮김 | `slide_library_example.py`, SQL: `../sql/library_answer.sql` (PostgreSQL 16 실행 검증) |
 
 모든 추가 슬라이드: 원본 템플릿 레이아웃, 노트 【슬라이드 핵심】【강의 설명】【연결】【출처】, 하단 `※ 약어` 주석, 출처 줄.
