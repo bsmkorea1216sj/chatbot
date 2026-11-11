@@ -1,6 +1,6 @@
 # STATUS (작업 시작 시 이 파일만 먼저 읽기)
 
-**마지막 갱신:** 2026-11-10 · claude
+**마지막 갱신:** 2026-11-11 · claude
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
 ## 현재 상태
@@ -24,6 +24,7 @@
 | 실습 DB 준비 | CD10_RDS_DB생성(26).ipynb | 1LCZQRDjSoCETzQZ_Has8BfoL2JMbD3Ic |
 | 11-2 패턴(강의자) | [클라우드데이터베이스기초] 11-2_정규화.pptx | 1kpLd9222ZqByf4NxcInQsgOhGEw08dgQ |
 | 11-3 교안 | [클라우드데이터베이스기초] 11-3_데이터베이스 설계실습(26).pptx | 16mLq0QLxmGUH1mR2QWdsGam0tufQbYum |
+| 11-1 교안(보강) | [클라우드데이터베이스기초] 11-1_데이터베이스 설계 개요(26)_보강.pptx | 1zYS43RH1IpcrfJiDsCbz95kl_Wf2du2F |
 | 11-3 Colab | CD11-3_Colab_설계실습.ipynb | 1mJEtXxBEUK9THq9pVF607BVqO_vDO5Qg |
 - 주의: ID 14CJxBnMIlYSo1l6hwC7Z796F7-dVmvdr 도 이름이 CD10-1_PostgreSQL(26).pptx (예전 원본 내용) → 작업 대상 아님
 
