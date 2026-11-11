@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-11 03:43 [claude] 11-1 보강본 18쪽(사례) 뒤 실습 예제 2장 추가: 19쪽 동네 도서관 대출 개념→논리→물리 문제(카드 아래 작은 정답), 20쪽 pgAdmin 정답 SQL(주석=정답 설명, 결과 표, FK·CHECK·UNIQUE 오류 확인). SQL은 PostgreSQL 16에서 실행 검증 (cd11-1/scripts/slide_library_example.py, cd11-1/sql/library_answer.sql) → 47장
 - 2026-11-11 03:40 [claude] 11-1 보강본 12쪽 Meta Muse 재작성: '귀찮은 환불 신청을 대신하는 에이전트' 중심(택배 배송비 환불 예시 4단계, Forbes 2026.09 '잊고 있던 돈 찾기'), 신청서 칸=열·칸 채우기=INSERT·주문번호=FK로 데이터 모델링 연결, 한계(독립 검증 전·Amazon 차단)는 출처·노트에 → 같은 파일
 - 2026-11-11 03:26 [claude] 11-1 보강본 11쪽 뒤에 12쪽 '데이터 모델링 사례 · Meta Muse' 추가(Alexandr Wang 사진 CC BY-SA 4.0·Meta 제공, 타임라인 1997~2026.04, 라벨링=개념·물리 모델링 연결, 약어·출처·노트). 강의자가 수정 중인 9·17쪽 최신본 기준으로 적용 (cd11-1/scripts/slide_meta_muse.py) → 45장
 - 2026-11-11 03:12 [claude] 11-1 보강본 9쪽(본문 사례 연결 1) 보강: 원본 제목 자리로 제목 정리(중복 태그·막대·Cloud Database 제거), 6쪽과 같은 3단 카드+아이콘, 현실→Ontology→PostgreSQL 예시와 같은 주문 B0001 추적, 강의 포인트 유지, 약어 주석·노트·출처 (cd11-1/scripts/slide9_three_worlds.py). 강의자가 수정한 6쪽은 그대로 → 11-1_데이터베이스 설계 개요(26)_보강.pptx
