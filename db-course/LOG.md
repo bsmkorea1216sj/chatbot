@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-11 04:12 [claude] 11-1 보강본 29쪽 적용 사례를 개념(Palantir Ontology)·논리(Google Knowledge Catalog)·물리(AWS DynamoDB) 3단 행으로 재구성(단계별 질문·정하는 것·관계형 대응 SQL, 토론을 단계별 점검으로), 제목 한 줄로. 강의자가 도서관 예제를 30·31쪽으로 옮긴 04:07 최신본 기준, 25쪽 '(19쪽)' 참조 제거 (cd11-1/scripts/slide_case_levels.py)
 - 2026-11-11 03:59 [claude] 11-1 보강본 26쪽(개념적 데이터 모델 종류) 뒤 27쪽 '의미 객체 모델 vs ER 모델' 추가: 도서관 대출(19쪽)을 Chen ER 다이어그램과 Kroenke 의미 객체 다이어그램으로 나란히, 비교 표 5행, 약어·출처·노트. 강의자가 수정한 29·30쪽 포함 최신본 기준 (cd11-1/scripts/slide_som_vs_er.py) → 48장
 - 2026-11-11 03:43 [claude] 11-1 보강본 18쪽(사례) 뒤 실습 예제 2장 추가: 19쪽 동네 도서관 대출 개념→논리→물리 문제(카드 아래 작은 정답), 20쪽 pgAdmin 정답 SQL(주석=정답 설명, 결과 표, FK·CHECK·UNIQUE 오류 확인). SQL은 PostgreSQL 16에서 실행 검증 (cd11-1/scripts/slide_library_example.py, cd11-1/sql/library_answer.sql) → 47장
 - 2026-11-11 03:40 [claude] 11-1 보강본 12쪽 Meta Muse 재작성: '귀찮은 환불 신청을 대신하는 에이전트' 중심(택배 배송비 환불 예시 4단계, Forbes 2026.09 '잊고 있던 돈 찾기'), 신청서 칸=열·칸 채우기=INSERT·주문번호=FK로 데이터 모델링 연결, 한계(독립 검증 전·Amazon 차단)는 출처·노트에 → 같은 파일
