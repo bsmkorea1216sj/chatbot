@@ -19,6 +19,7 @@
 | 12 | 데이터 모델링 사례 · **Meta Muse**: 귀찮은 환불 신청을 대신하는 AI 에이전트(2026.09 출시), 신청서 칸=열·채우기=INSERT·주문번호=FK, 알렉산더 왕 사진(CC BY-SA 4.0, Meta 제공) | `slide_meta_muse.py` |
 | 25 | **의미 객체 모델 vs ER 모델**: 도서관 대출을 Chen ER / Kroenke 의미 객체 다이어그램으로 나란히 + 비교 표 | `slide_som_vs_er.py` |
 | 29 | 적용 사례 | 주문·결제의 **개념(Palantir Ontology)·논리(Google Knowledge Catalog)·물리(AWS DynamoDB)** 3단 행 + 관계형 대응 SQL + 단계별 토론 | `slide_case_levels.py` |
+| 39 | Palantir Ontology: 현실 업무를 데이터 모델로 → **개념·논리·물리** 3단 행 추가, 빈 글머리표 제거, 노트 교체 | `slide_ontology_levels.py` |
 | 30·31 | 실습 예제 · 동네 도서관 대출(개념→논리→물리 문제, 카드 아래 작은 정답) / 정답 pgAdmin SQL(주석=정답 설명). 강의자가 18쪽 뒤 → 30·31쪽으로 옮김 | `slide_library_example.py`, SQL: `../sql/library_answer.sql` (PostgreSQL 16 실행 검증) |
 
 모든 추가 슬라이드: 원본 템플릿 레이아웃, 노트 【슬라이드 핵심】【강의 설명】【연결】【출처】, 하단 `※ 약어` 주석, 출처 줄.

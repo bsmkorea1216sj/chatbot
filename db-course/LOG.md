@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-11 04:22 [claude] 11-1 보강본 39쪽 Palantir Ontology를 개념(객체·링크·액션)·논리(기본키·속성·외래키/연결 데이터셋)·물리(데이터셋 동기화·색인·권한) 3단 행으로 보강, 빈 글머리표 제거, 본문과 안 맞던 노트 교체 (cd11-1/scripts/slide_ontology_levels.py)
 - 2026-11-11 04:20 [claude] Codex 공유용 인수인계 문서 db-course/HANDOFF.md 작성(11-1·11-3 변경 페이지·스크립트·주의사항), STATUS에 링크
 - 2026-11-11 04:12 [claude] 11-1 보강본 29쪽 적용 사례를 개념(Palantir Ontology)·논리(Google Knowledge Catalog)·물리(AWS DynamoDB) 3단 행으로 재구성(단계별 질문·정하는 것·관계형 대응 SQL, 토론을 단계별 점검으로), 제목 한 줄로. 강의자가 도서관 예제를 30·31쪽으로 옮긴 04:07 최신본 기준, 25쪽 '(19쪽)' 참조 제거 (cd11-1/scripts/slide_case_levels.py)
 - 2026-11-11 03:59 [claude] 11-1 보강본 26쪽(개념적 데이터 모델 종류) 뒤 27쪽 '의미 객체 모델 vs ER 모델' 추가: 도서관 대출(19쪽)을 Chen ER 다이어그램과 Kroenke 의미 객체 다이어그램으로 나란히, 비교 표 5행, 약어·출처·노트. 강의자가 수정한 29·30쪽 포함 최신본 기준 (cd11-1/scripts/slide_som_vs_er.py) → 48장
