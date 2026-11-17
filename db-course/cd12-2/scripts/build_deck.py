@@ -239,7 +239,7 @@ append_note(s_crud_ans, '【측정 반영】 Colab 4번 셀은 트랜잭션 안�
 for s in (s_crud_blank, s_crud_ans):
     body = next(sh for sh in s.placeholders if sh.placeholder_format.idx == 1)
     body.top, body.height = Inches(1.5), Inches(1.6)
-    TEXTS = ['트랜잭션별 개체의 CRUD 상태를 표로 정리',
+    TEXTS = ['주요 트랜잭션 단계별로 개체의 CRUD 상태를 표로 정리',
              '주요 트랜잭션이 실행될 때 각 개체에 일어나는 생성(C)·조회(R)·수정(U)·삭제(D)를 표로 정리하여, 이후 논리적·물리적 모델링에 반영함']
     for i, p in enumerate(body.text_frame.paragraphs):
         if i < len(TEXTS) and p.runs:
