@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-17 14:13 [codex] CD12-1 쿠팡 공개 주문·배송조회 사례를 요구 분석·SQLite 표 5개·Python 쇼핑몰 웹앱으로 연결. Colab DB 생성·주문·검증·미리보기로 교안 연동. HTTP·DB 검증 및 Drive 재확인 (`cd12-1/scripts/build_shop_notebook.py`, `connect_shop_deck.py`, KST) → [클라우드데이터베이스기초] 12-1데이터베이스 설계.Part1(26).pptx / CD12-1_Colab_쇼핑몰DB_웹앱(26).ipynb
 - 2026-11-17 14:01 [codex] 12-1 데이터베이스 설계 Part1(26) 신규 생성(36장), 요구→데이터→트랜잭션 재고 시나리오, Shopify 사례·Colab 코드/강의 노트 추가, 원본 Summary 유지와 Drive 검증 (`cd12-1/scripts/upgrade_part1.py`, KST) → [클라우드데이터베이스기초] 12-1데이터베이스 설계.Part1(26).pptx
 - 2026-11-11 05:45 [claude] 교안↔Colab 미션 노트북 만드는 형식(11-3 기준) 문서 + 5차 정규화 Q&A 부록 → db-course/docs/Colab_미션노트북_만드는법_11-3.md
 - 2026-11-11 14:38 [codex] 11-2 정규화 13~15쪽과 22~27쪽을 문제→입력·수정·삭제 이상→분리·검증 흐름으로 통일. 2NF 제품 3행·주문목록 6행과 4NF의 사원 10 조합 6행을 SQLite JOIN으로 복원 확인, 26쪽 숨김 유지(`cd11-2/scripts/align_2nf_4nf_flow.py`, KST) → [클라우드데이터베이스기초] 11-2_정규화(26).pptx
