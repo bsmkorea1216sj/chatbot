@@ -33,6 +33,10 @@
 - 23쪽 4차 정규화 문제 설명: ①원래 정보→②임의 짝(거짓 의미)→③모든 조합 6행(22·24쪽 Codex 예시와 연결) → `slide23_4nf_problem.py`
 - 16쪽 3차 정규화: 13쪽과 같은 스타일의 결과 ER 다이어그램(고객 1─<N 주문) + 종속 사슬 + 노트 → `db-course/cd11-2/scripts/slide16_3nf_diagram.py`
 
+## 2-2. 12-1 쇼핑몰 실습 (교안 `1Gu6kZNfazuj6jpYexa_Jd7aVNd0XVwmu`, Colab `1URPntHhY0jY96psj9cK0Khrzq3gLb8KX`)
+- Colab 5셀: 1 DB 생성(shop-db-create) · 2 표 만들기(shop-tables) · 3 자동 검증(shop-verify) · 4 웹앱(shop-webapp) · 제출(shop-submit) · 5 삭제(shop-delete). 보안 비밀 AWS 키+DB_PASSWORD만 사용, RDS 없으면 생성, 5번에서 삭제 → `cd12-1/scripts/split_notebook.py`
+- 교안 버튼↔셀 매핑·문구 → `deck_cell_links.py`, 24쪽 ERD → `deck_erd_runcheck.py`
+
 ## 3. 11-3에서 바꾼 것
 - **Colab 미션 노트북 만드는 형식(다른 장에도 적용):** `db-course/docs/Colab_미션노트북_만드는법_11-3.md` (`db-course/cd11-3/scripts/`)
 - 교안↔Colab 미션 연계: 교안 🎯 버튼 → 노트북 `#scrollTo=mission_m1..m5, mission_hw`

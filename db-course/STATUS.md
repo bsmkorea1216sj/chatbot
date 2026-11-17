@@ -4,7 +4,7 @@
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
 ## 현재 상태
-- 12-1 설계 Part1(26) 기준본(36장): 쿠팡 주문 흐름, AWS RDS PostgreSQL 연결(TLS), Colab 웹앱 주문·취소·실습 스키마 삭제, 교안 단계 링크와 글자 확대. HTTP 대역 테스트 및 Drive 재다운로드 검증. 실제 RDS 연결·Colab 미리보기 미확인.
+- 12-1 설계 Part1(26) 기준본(36장) + Colab 5셀(1 DB 생성·2 표·3 검증·4 웹앱·5 삭제): Colab 보안 비밀(AWS_ACCESS_KEY·AWS_SECRET_KEY·DB_PASSWORD)만으로 AWS에 실습 RDS 생성→실습→삭제. 교안 버튼이 각 셀로 이동. 실제 AWS 실행 미검증(모의 검증 완료).
 - 10-1 기준본: `CD10-1_PostgreSQL26.pptx` (48장, 강의자 편집 중). 약어 주석 전체 반영 완료
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정
