@@ -47,6 +47,11 @@
 - CRUD는 pg_stat_xact_user_tables로 실제 측정 → 20쪽 정답에 Order Details R 두 칸(노란색)·주문취소 행 반영. 20쪽은 원본처럼 숨김
 - 생성: `cd12-2/scripts/build_notebook.py <12-1 노트북> <출력>` · `build_deck.py <원본> <출력> <노트북ID>`
 
+## 2-4. 12-3 논리적·물리적 모델링(26) (교안 `15z0sVLvy--Je1DqqJD9ZxK24g03mDOaJ`, Colab `16zKCRFtxxvxd3m9DJeg2F73dIiQWhCVN`, 원본 `18OCGd8-ZLmTlUzHJKIXYw_dlUFSt1C5y`)
+- 셀 id: l-db-create · l-quiz1 · l-schema · l-integrity · l-assign1(21쪽) · l-quiz2 · l-fillfactor · l-quiz3 · l-index · l-partition · l-assign2(35쪽) · l-physical · l-delete(57쪽, 최종 삭제)
+- 2번 셀이 shop을 교안 열 이름(product_name·payment_method·order_status·ship_address 등)으로 정렬 → 이후 12-2 노트북 셀은 옛 열 이름이라 다시 돌리면 안 됨
+- 4~6번 실험은 lab12_3 스키마(7번에서 삭제). 생성: `cd12-3/scripts/build_notebook.py <12-1> <12-2> <출력>` · `build_deck.py <원본> <출력> <노트북ID>`
+
 ## 3. 11-3에서 바꾼 것
 - **Colab 미션 노트북 만드는 형식(다른 장에도 적용):** `db-course/docs/Colab_미션노트북_만드는법_11-3.md` (`db-course/cd11-3/scripts/`)
 - 교안↔Colab 미션 연계: 교안 🎯 버튼 → 노트북 `#scrollTo=mission_m1..m5, mission_hw`

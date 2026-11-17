@@ -7,6 +7,7 @@
 - **12장 이어하기(12-1 → 12-2 → 12-3):** 같은 RDS `cd12-shop-lab`·고정 스키마 `shop`을 이어 씀. 12-1·12-2 마지막 셀은 STOP(중지, 데이터 유지), **최종 삭제는 12-3 마지막 셀**. 12-1 실제 AWS 동작 확인됨
 - 12-1 설계 Part1(26) 36장 + Colab 5셀(1 DB 생성·2 표(shop)·3 검증·4 웹앱·5 마무리 STOP) → `cd12-1/scripts/continue_chain.py`·`continue_deck.py`
 - 12-2 개념적 모델링(26) 31장 + Colab: 1 DB 생성(중지된 RDS 시작)·2 12-1 DB 이어받기(shop 표 5개→7개 마이그레이션, 없으면 새로 생성)·과제①·3 트랜잭션·4 CRUD·과제②·5 마무리 STOP, 🔎퀴즈 3개(정답 표시 교안 8·16·18쪽). 한글 자판 입력(1;n, 1:ㅜ, ㅕ) 인정
+- 12-3 논리·물리 모델링(26) 신규 59장(원본 55 + 4 Colab 개요·21 과제① 무결성 예측·35 과제② 파티션 수·57 실습 끝내기 최종 삭제) + Colab 8셀(2 논리 스키마 정렬·3 제약·4 Fillfactor·5 인덱스/CLUSTER·6 파티션/테이블스페이스·7 물리 설계 적용·8 DELETE), 🔎퀴즈 3(23·32·33쪽). 원본 본문 오류 5곳 수정. 실제 AWS 미검증(모의 검증 완료)
 - 10-1 기준본: `CD10-1_PostgreSQL26.pptx` (48장, 강의자 편집 중). 약어 주석 전체 반영 완료
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정
@@ -35,6 +36,9 @@
 | 12-1 Colab | CD12-1_Colab_쇼핑몰DB_웹앱(26).ipynb | 1URPntHhY0jY96psj9cK0Khrzq3gLb8KX |
 | 12-2 교안 | [클라우드데이터베이스기초] 12-2_개념적모델링(26).pptx | 1VBrZI-xw8Nk5BPrE5m9cQudmQDjx7dfB |
 | 12-2 Colab | CD12-2_Colab_개념모델_RDS(26).ipynb | 1bUdKHLpCey3gCNt-3Qyx-8SCy9QCZfTY |
+| 12-3 교안 | [클라우드데이터베이스] 12-3_논리적물리적모델링(26).pptx | 15z0sVLvy--Je1DqqJD9ZxK24g03mDOaJ |
+| 12-3 Colab | CD12-3_Colab_논리물리모델_RDS(26).ipynb | 16zKCRFtxxvxd3m9DJeg2F73dIiQWhCVN |
+| 12-3 원본 | [클라우드데이터베이스] 12-3_논리적물리적모델링.pptx | 18OCGd8-ZLmTlUzHJKIXYw_dlUFSt1C5y |
 | 11-3 Colab | CD11-3_Colab_설계실습.ipynb | 1mJEtXxBEUK9THq9pVF607BVqO_vDO5Qg |
 - 주의: ID 14CJxBnMIlYSo1l6hwC7Z796F7-dVmvdr 도 이름이 CD10-1_PostgreSQL(26).pptx (예전 원본 내용) → 작업 대상 아님
 
