@@ -5,6 +5,7 @@
 
 ## 현재 상태
 - 12-1 설계 Part1(26) 기준본(36장) + Colab 5셀(1 DB 생성·2 표·3 검증·4 웹앱·5 삭제): Colab 보안 비밀(AWS_ACCESS_KEY·AWS_SECRET_KEY·DB_PASSWORD)만으로 AWS에 실습 RDS 생성→실습→삭제. 교안 버튼이 각 셀로 이동. 실제 AWS 실행 미검증(모의 검증 완료).
+- 12-2 개념적 모델링(26) 신규(31장) + Colab 7셀(1 DB 생성·2 표 7개·과제① 관계 차수·3 주문 트랜잭션(롤백)·4 CRUD 측정·과제② 주문취소 CRUD·5 삭제), 12-1과 같은 보안 비밀·RDS 방식. 실제 AWS 미검증(12-1 1·5번 셀은 실제 AWS 동작 확인됨).
 - 10-1 기준본: `CD10-1_PostgreSQL26.pptx` (48장, 강의자 편집 중). 약어 주석 전체 반영 완료
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정
@@ -31,6 +32,8 @@
 | 11-1 Colab | CD11-1_Colab_Lab(26).ipynb | 1fQ--R38hR6exXmFtyl8wvDKpZNn9DSP1 |
 | 12-1 교안 | [클라우드데이터베이스기초] 12-1데이터베이스 설계.Part1(26).pptx | 1Gu6kZNfazuj6jpYexa_Jd7aVNd0XVwmu |
 | 12-1 Colab | CD12-1_Colab_쇼핑몰DB_웹앱(26).ipynb | 1URPntHhY0jY96psj9cK0Khrzq3gLb8KX |
+| 12-2 교안 | [클라우드데이터베이스기초] 12-2_개념적모델링(26).pptx | 1VBrZI-xw8Nk5BPrE5m9cQudmQDjx7dfB |
+| 12-2 Colab | CD12-2_Colab_개념모델_RDS(26).ipynb | 1bUdKHLpCey3gCNt-3Qyx-8SCy9QCZfTY |
 | 11-3 Colab | CD11-3_Colab_설계실습.ipynb | 1mJEtXxBEUK9THq9pVF607BVqO_vDO5Qg |
 - 주의: ID 14CJxBnMIlYSo1l6hwC7Z796F7-dVmvdr 도 이름이 CD10-1_PostgreSQL(26).pptx (예전 원본 내용) → 작업 대상 아님
 
