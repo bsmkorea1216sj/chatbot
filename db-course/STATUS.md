@@ -1,11 +1,12 @@
 # STATUS (작업 시작 시 이 파일만 먼저 읽기)
 
-**마지막 갱신:** 2026-11-17 · codex
+**마지막 갱신:** 2026-11-18 · claude
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
 ## 현재 상태
-- 12-1 설계 Part1(26) 기준본(36장) + Colab 5셀(1 DB 생성·2 표·3 검증·4 웹앱·5 삭제): Colab 보안 비밀(AWS_ACCESS_KEY·AWS_SECRET_KEY·DB_PASSWORD)만으로 AWS에 실습 RDS 생성→실습→삭제. 교안 버튼이 각 셀로 이동. 실제 AWS 실행 미검증(모의 검증 완료).
-- 12-2 개념적 모델링(26) 신규(31장) + Colab 7셀(1 DB 생성·2 표 7개·과제① 관계 차수·3 주문 트랜잭션(롤백)·4 CRUD 측정·과제② 주문취소 CRUD·5 삭제), 12-1과 같은 보안 비밀·RDS 방식. 실제 AWS 미검증(12-1 1·5번 셀은 실제 AWS 동작 확인됨).
+- **12장 이어하기(12-1 → 12-2 → 12-3):** 같은 RDS `cd12-shop-lab`·고정 스키마 `shop`을 이어 씀. 12-1·12-2 마지막 셀은 STOP(중지, 데이터 유지), **최종 삭제는 12-3 마지막 셀**. 12-1 실제 AWS 동작 확인됨
+- 12-1 설계 Part1(26) 36장 + Colab 5셀(1 DB 생성·2 표(shop)·3 검증·4 웹앱·5 마무리 STOP) → `cd12-1/scripts/continue_chain.py`·`continue_deck.py`
+- 12-2 개념적 모델링(26) 31장 + Colab: 1 DB 생성(중지된 RDS 시작)·2 12-1 DB 이어받기(shop 표 5개→7개 마이그레이션, 없으면 새로 생성)·과제①·3 트랜잭션·4 CRUD·과제②·5 마무리 STOP, 🔎퀴즈 3개(정답 표시 교안 8·16·18쪽). 한글 자판 입력(1;n, 1:ㅜ, ㅕ) 인정
 - 10-1 기준본: `CD10-1_PostgreSQL26.pptx` (48장, 강의자 편집 중). 약어 주석 전체 반영 완료
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정

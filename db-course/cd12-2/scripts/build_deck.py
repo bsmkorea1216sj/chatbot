@@ -1,6 +1,7 @@
 """CD12-2 개념적 모델링 교안(26) — 12-1과 같은 형식: 실습 쪽마다 Colab 셀 버튼, Colab 개요·실습 끝내기 쪽, 중간 과제 2개.
 원본(1jnWHgGIYul_DyVYea4P3Qc0ZsiJcs7tG)은 그대로 두고 새 (26) 파일을 만든다.
- 새 쪽: 4 Colab 실습 개요 · 14 과제 ① 관계 차수 · 29 실습 끝내기(RDS 삭제)
+ 새 쪽: 4 Colab 실습 개요 · 14 과제 ① 관계 차수 · 29 실습 끝내기(RDS 중지 STOP · 최종 삭제는 12-3)
+ 12-1 Colab의 RDS·shop 데이터를 이어받는다. 🔎 퀴즈 정답 표시: 8·16·18쪽
  수정: 버튼(8·11·12·13·16·17·18·19·20·23·24) · 18쪽 재고 차감 시점(결제 승인, 20쪽 CRUD와 일치) ·
        19쪽 과제 ②(주문취소 행 추가) · 20쪽 정답(주문취소 행, 측정 결과 Order Details R 두 칸 노란색) · 약어 주석·노트
 python build_deck.py <원본.pptx> <출력.pptx> <노트북ID>"""
@@ -124,33 +125,34 @@ s_conc = [s for s in prs.slides if '6. 결론 및 향후 발전' in txt(s) and '
 
 # ── 새 쪽 A: Colab 실습 개요 (학습목표 다음)
 A = new_slide(s_goal, 'Colab 실습 | 개념 모델을 AWS RDS에서 확인')
-tb(A, 0.98, 1.5, 11.4, 0.4, [('Colab 보안 비밀만으로 AWS에 실습 RDS를 만들고 → 표·과제·트랜잭션·CRUD를 확인한 뒤 → 삭제합니다.', {'size': 15, 'bold': True})])
+tb(A, 0.98, 1.5, 11.4, 0.4, [('12-1의 RDS·shop 데이터를 이어받아 → 개념 모델 확장·과제·퀴즈·CRUD 확인 → 중지(STOP)', {'size': 15, 'bold': True})])
 tb(A, 0.98, 1.92, 11.4, 0.3, [[('실습 노트북  ', {'size': 11, 'color': GRAY}), (NB, {'size': 11, 'color': '1155CC', 'link': NB})]])
 table(A, 0.98, 2.3, [2.1, 7.0, 2.3], [
     ('셀', '하는 일', '교안'),
-    ('1. DB 생성', '보안 비밀(AWS 키·DB_PASSWORD)로 AWS에 RDS 생성(없을 때만) → ④ 연결 확인', '이 쪽'),
-    ('2. 표 만들기', '엔티티 7개를 IE 표기법 그대로 표로 만들기', '8·11~13쪽'),
+    ('1. DB 생성', '12-1에서 중지한 RDS를 다시 시작(없으면 새로 생성) → ④ 연결 확인', '이 쪽'),
+    ('2. 12-1 DB 이어받기', '🔎퀴즈 ① → 12-1 shop 표 5개를 엔티티 7개로 확장', '8·11~13쪽'),
     ('과제 ①', '관계 차수(1:1 / 1:N) 입력 → 실제 FK·UNIQUE로 채점', '14쪽'),
-    ('3. 주문 트랜잭션', '주문생성 → 결제승인 → 배송처리 → 리뷰작성, 재고 부족 시 전체 롤백', '16~18쪽'),
-    ('4. CRUD 측정', '트랜잭션마다 실제 C·R·U·D를 측정해 매트릭스로', '19·20쪽'),
+    ('3. 주문 트랜잭션', '🔎퀴즈 ② → 주문생성 → 결제승인 → 배송처리 → 리뷰작성, 실패 시 전체 롤백', '16~18쪽'),
+    ('4. CRUD 측정', '🔎퀴즈 ③ → 트랜잭션마다 실제 C·R·U·D를 측정해 매트릭스로', '19·20쪽'),
     ('과제 ②', '‘주문취소’ 행 CRUD 예측 → 측정과 비교', '19쪽 (정답 20쪽)'),
-    ('5. 삭제', 'DELETE 입력 → AWS의 실습 RDS 삭제 (요금 중지)', '29쪽'),
+    ('5. 마무리', 'STOP 입력 → RDS 중지, 데이터 유지 (최종 삭제는 12-3 마지막)', '29쪽'),
 ], size=11.5, rh=0.42, hl={3: 'FFF3D9', 6: 'FFF3D9'})
 foot(A, '※ 보안 비밀: AWS_ACCESS_KEY · AWS_SECRET_KEY · DB_PASSWORD (각 항목 ‘노트북 액세스’ 켜기) · RDS: Relational Database Service · CRUD: Create·Read·Update·Delete', y=5.82)
 button(A, '1. DB 생성', 'm-db-create'); button(A, '노트북 처음부터 열기', None, x=6.05)
-add_notes(A, '【슬라이드 핵심】 12-1과 같은 방식으로, Colab 보안 비밀만으로 AWS에 실습 RDS를 만들고 개념 모델을 실제 표·제약조건·트랜잭션으로 확인한 뒤 삭제한다. 각 쪽의 Colab 버튼이 해당 셀로 이동한다.\n'
-             '【강의 설명】 학생은 열쇠 아이콘에 AWS_ACCESS_KEY, AWS_SECRET_KEY, DB_PASSWORD를 등록하고 노트북 액세스를 켠다. 1번 셀은 RDS가 없으면 만들고(5~15분), 있으면 그대로 쓴다(12-1과 같은 RDS). '
-             '노란 줄 두 개가 중간 과제다: 과제 ①은 ERD를 본 뒤 관계 차수를, 과제 ②는 CRUD 매트릭스를 배운 뒤 주문취소 행을 예측한다. 실습이 끝나면 29쪽 안내대로 5번 셀로 RDS를 삭제한다.\n'
+add_notes(A, '【슬라이드 핵심】 12-1과 같은 방식으로, Colab 보안 비밀만으로 AWS에 실습 RDS를 12-1에서 만든 RDS와 shop 데이터를 이어받아 개념 모델을 실제 표·제약조건·트랜잭션으로 확인한 뒤 중지한다(최종 삭제는 12-3). 각 쪽의 Colab 버튼이 해당 셀로 이동한다.\n'
+             '【강의 설명】 학생은 열쇠 아이콘에 AWS_ACCESS_KEY, AWS_SECRET_KEY, DB_PASSWORD를 등록하고 노트북 액세스를 켠다. 1번 셀은 12-1에서 중지한 RDS를 다시 시작하고(없으면 새로 생성, 5~15분), 2번 셀은 12-1의 shop 표 5개(고객·상품·주문·주문항목·배송)와 웹앱 주문 데이터를 그대로 둔 채 열 이름을 바꾸고 결제·리뷰 표를 더해 7개로 확장한다(12-1을 안 했으면 새로 생성). 다시 실행해도 그대로 쓴다. 🔎 예측 퀴즈 3개(정답 표시 8·16·18쪽)는 실행 전에 결과를 맞히는 짧은 문제다. '
+             '노란 줄 두 개가 중간 과제다: 과제 ①은 ERD를 본 뒤 관계 차수를, 과제 ②는 CRUD 매트릭스를 배운 뒤 주문취소 행을 예측한다. 실습이 끝나면 29쪽 안내대로 5번 셀에서 STOP으로 RDS를 중지한다(12-3에서 이어서 사용, 최종 삭제는 12-3 마지막).\n'
              f'【연결】 {NB}')
 
 # ── 버튼: 기존 쪽
 LOW_RIGHT = dict(x=6.35, y=6.98, w=4.7)                   # 본문·ERD가 아래까지 차는 쪽
-for s, label, anchor in [(s_ent, '2. 표 만들기', 'm-tables'), (s_rel_text, '2. 표 만들기', 'm-tables'),
-                         (s_rel_list, '2. 표 만들기', 'm-tables'), (s_chen, '2. 표 만들기', 'm-tables'),
-                         (s_ie, '2. 표 만들기', 'm-tables'), (s_tx1, '3. 주문 트랜잭션', 'm-transaction'),
+T2 = '2. 12-1 DB 이어받기'
+for s, label, anchor in [(s_ent, T2, 'm-tables'), (s_rel_text, T2, 'm-tables'),
+                         (s_rel_list, T2, 'm-tables'), (s_chen, T2, 'm-tables'),
+                         (s_ie, T2, 'm-tables'), (s_tx1, '3. 주문 트랜잭션', 'm-transaction'),
                          (s_tx2, '3. 주문 트랜잭션', 'm-transaction'), (s_flow, '3. 주문 트랜잭션', 'm-transaction'),
                          (s_crud_blank, '과제 ② 주문취소 CRUD 예측', 'm-assign2'), (s_crud_ans, '4. CRUD 측정', 'm-crud'),
-                         (s_ent_rev, '2. 표 만들기', 'm-tables'), (s_ie_rev, '2. 표 만들기', 'm-tables')]:
+                         (s_ent_rev, T2, 'm-tables'), (s_ie_rev, T2, 'm-tables')]:
     if s in (s_ie, s_ie_rev):                              # ERD가 바닥까지 → 상자들 오른쪽 빈 곳
         b = button(s, label, anchor, x=8.35, y=6.98, w=3.2); b.height = Inches(0.4)
     elif s in (s_ent, s_rel_text, s_ent_rev):
@@ -158,6 +160,16 @@ for s, label, anchor in [(s_ent, '2. 표 만들기', 'm-tables'), (s_rel_text, '
     else:
         button(s, label, anchor)
     append_note(s, f'【Colab】 {label} 셀: {NB}#scrollTo={anchor}')
+
+# 🔎 예측 퀴즈 정답 (Colab 퀴즈 셀과 같은 쪽 번호) — 버튼 옆 작은 회색 글씨
+def quiz_mark(s, text, **kw):
+    tb(s, kw.get('x', 6.05), kw.get('y', 6.7), kw.get('w', 6.3), 0.28, [(text, {'size': 9.5, 'color': '8A96A8'})], align=PP_ALIGN.RIGHT)
+quiz_mark(s_ent, '🔎퀴즈 ① 정답 · 표 7개 (12-1의 5개 + 결제·리뷰)', x=7.0, y=2.28, w=5.4)   # 본문 둘째 줄 오른쪽 빈 곳
+quiz_mark(s_tx1, '🔎퀴즈 ② 정답 · 와이드 팬츠 재고 3 (전체 롤백 = 원자성)')
+quiz_mark(s_flow, '🔎퀴즈 ③ 정답 · 주문생성의 C는 4개 표 (주문·주문상세·결제·배송)')
+append_note(s_ent, '【🔎퀴즈 ①】 12-1 표 5개 → 개념 모델 7개(결제·리뷰 추가). 정답은 이 쪽 표 위 오른쪽 작은 글씨.')
+append_note(s_tx1, '【🔎퀴즈 ②】 결제승인 중 품절 상품에서 실패하면 앞에서 차감한 와이드 팬츠 재고까지 함께 롤백되어 3 그대로다(원자성).')
+append_note(s_flow, '【🔎퀴즈 ③】 주문생성은 Orders·Order Details·Payments(대기)·Delivery(준비) 4개 표에 C, 고객·상품은 R. 20쪽 CRUD 정답과 같다.')
 
 foot(s_tx1, '※ ACID: Atomicity·Consistency·Isolation·Durability (원자성·일관성·고립성·지속성) · Colab 3번 셀에서 재고 부족 시 전체 롤백을 확인', y=6.22)
 
@@ -252,17 +264,17 @@ for s in (s_crud_blank, s_crud_ans):
     tshape.top = Inches(3.2)
 
 # ── 새 쪽 C: 실습 끝내기 (결론 둘째 쪽 다음 = summary 앞)
-C = new_slide(s_conc, '실습 끝내기 | AWS RDS 삭제')
+C = new_slide(s_conc, '실습 끝내기 | RDS 중지 (12-3에서 이어서)')
 tb(C, 0.98, 1.6, 11.4, 2.6, [
     [('1. ', {'bold': True}), '제출: 과제 ①·② 결과(⑥·⑨)와 4번 셀 CRUD 매트릭스를 캡처합니다.'],
-    [('2. ', {'bold': True}), 'Colab 5. 삭제 셀을 실행하고 DELETE를 입력합니다.'],
-    [('3. ', {'bold': True}), 'AWS의 실습 RDS(cd12-shop-lab)가 삭제되어 요금이 멈춥니다. 런타임을 다시 시작했어도 이 셀만 실행하면 됩니다.'],
-    [('4. ', {'bold': True}), '다음 실습 때는 1번 셀이 RDS를 새로 만듭니다 (5~15분).'],
+    [('2. ', {'bold': True}), 'Colab 5. 마무리 셀을 실행하고 STOP을 입력합니다.'],
+    [('3. ', {'bold': True}), 'RDS(cd12-shop-lab)가 중지되어 인스턴스 요금이 멈추고, shop 데이터는 그대로 남습니다. 런타임을 다시 시작했어도 이 셀만 실행하면 됩니다.'],
+    [('4. ', {'bold': True}), '12-3의 1번 셀이 RDS를 다시 시작해 이어서 실습하고, 12-3 마지막 셀에서 최종 삭제합니다.'],
 ], size=16)
-foot(C, '※ RDS는 켜져 있는 동안 요금이 나옵니다. 수업 끝에 반드시 삭제하세요.', y=6.0)
-button(C, '5. 삭제', 'm-delete')
-add_notes(C, '【슬라이드 핵심】 실습이 끝나면 Colab 5번 셀로 AWS 실습 RDS를 삭제한다.\n'
-             '【강의 설명】 5번 셀은 보안 비밀의 AWS 키로 다시 인증하므로 런타임이 초기화돼도 단독 실행된다. DELETE를 입력하면 최종 스냅샷 없이 삭제하며 5~10분 뒤 사라진다. 이미 없으면 “이미 삭제됐습니다”를 출력한다.\n'
+foot(C, '※ RDS: Relational Database Service · 켜져 있는 동안 요금이 나오므로 수업 끝에 반드시 STOP · AWS는 중지 7일 뒤 자동으로 다시 시작(수업 간격이 길면 콘솔에서 다시 중지) · DELETE는 과정을 그만둘 때만', y=6.0)
+button(C, '5. 마무리 (STOP)', 'm-delete')
+add_notes(C, '【슬라이드 핵심】 실습이 끝나면 Colab 5번 셀에서 STOP으로 RDS를 중지한다. 데이터(shop 스키마)는 남아 12-3에서 이어서 쓰고, 최종 삭제는 12-3 마지막 셀에서 한다.\n'
+             '【강의 설명】 5번 셀은 보안 비밀의 AWS 키로 다시 인증하므로 런타임이 초기화돼도 단독 실행된다. 중지 중에는 인스턴스 요금이 멈추고 저장공간 요금만 나온다. AWS는 중지 7일 뒤 자동으로 다시 시작하므로 수업 간격이 길면 콘솔에서 다시 중지하도록 안내한다. DELETE는 과정을 그만둘 때만 입력한다(이어서 할 데이터도 지워짐).\n'
              f'【연결】 {NB}#scrollTo=m-delete')
 
 prs.save(out)

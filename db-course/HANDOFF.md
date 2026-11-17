@@ -37,6 +37,11 @@
 - Colab 5셀: 1 DB 생성(shop-db-create) · 2 표 만들기(shop-tables) · 3 자동 검증(shop-verify) · 4 웹앱(shop-webapp) · 제출(shop-submit) · 5 삭제(shop-delete). 보안 비밀 AWS 키+DB_PASSWORD만 사용, RDS 없으면 생성, 5번에서 삭제 → `cd12-1/scripts/split_notebook.py`
 - 교안 버튼↔셀 매핑·문구 → `deck_cell_links.py`, 24쪽 ERD → `deck_erd_runcheck.py`
 
+## 2-2b. 12장 이어하기 (12-1 → 12-2 → 12-3)
+- 같은 RDS `cd12-shop-lab`, 고정 스키마 `shop`. 12-1·12-2 마지막 셀 = 5. 마무리(STOP 중지, DELETE는 그만둘 때만), **최종 삭제는 12-3 마지막 셀**
+- 12-1 노트북 수정: `cd12-1/scripts/continue_chain.py <in> <out>` (FINAL_CELL·FINAL_MD를 12-2·12-3이 재사용), 교안: `continue_deck.py`
+- 12-2 2번 셀: shop.payments 있으면 그대로, shop.products만 있으면 12-1 표 5개를 7개로 마이그레이션, 없으면 새로 생성. 🔎퀴즈 m-quiz1~3
+
 ## 2-3. 12-2 개념적 모델링(26) (교안 `1VBrZI-xw8Nk5BPrE5m9cQudmQDjx7dfB`, Colab `1bUdKHLpCey3gCNt-3Qyx-8SCy9QCZfTY`)
 - 12-1 형식(문서: `docs/AWS_RDS_Colab_실습_만드는법_12-1.md`). 셀 id: m-db-create · m-tables · m-assign1(과제① 14쪽) · m-transaction · m-crud · m-assign2(과제② 19쪽) · m-delete(29쪽)
 - CRUD는 pg_stat_xact_user_tables로 실제 측정 → 20쪽 정답에 Order Details R 두 칸(노란색)·주문취소 행 반영. 20쪽은 원본처럼 숨김
