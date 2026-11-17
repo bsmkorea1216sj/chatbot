@@ -1,5 +1,6 @@
 # LOG (최신이 위, 한 줄씩)
 
+- 2026-11-17 22:45 [codex] CD12-1 기존 교안·Colab을 AWS RDS PostgreSQL 실습으로 전환. Colab 실제 화면 셀, 주문 삭제·재고 복구, 실습 스키마 정리 추가. 교안 6쪽 포함 버튼 13개와 본문 주소 확인, 표·본문 글자 확대, HTTP 대역 테스트와 Drive 저장본 대조 (`upgrade_aws_notebook.py`, `align_aws_deck.py`, KST).
 - 2026-11-17 15:03 [codex] CD12-1 교안 31쪽 실습 안내문 아래에 클릭 가능한 Colab 전체 주소 표시, 렌더링·Drive 저장본 확인 (`cd12-1/scripts/show_colab_url.py`, KST).
 - 2026-11-17 14:13 [codex] CD12-1 쿠팡 공개 주문·배송조회 사례를 요구 분석·SQLite 표 5개·Python 쇼핑몰 웹앱으로 연결. Colab DB 생성·주문·검증·미리보기로 교안 연동. HTTP·DB 검증 및 Drive 재확인 (`cd12-1/scripts/build_shop_notebook.py`, `connect_shop_deck.py`, KST) → [클라우드데이터베이스기초] 12-1데이터베이스 설계.Part1(26).pptx / CD12-1_Colab_쇼핑몰DB_웹앱(26).ipynb
 - 2026-11-17 14:01 [codex] 12-1 데이터베이스 설계 Part1(26) 신규 생성(36장), 요구→데이터→트랜잭션 재고 시나리오, Shopify 사례·Colab 코드/강의 노트 추가, 원본 Summary 유지와 Drive 검증 (`cd12-1/scripts/upgrade_part1.py`, KST) → [클라우드데이터베이스기초] 12-1데이터베이스 설계.Part1(26).pptx
