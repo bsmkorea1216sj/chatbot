@@ -234,6 +234,17 @@ foot(s_crud_ans, '※ 노란 칸: Colab 4번 셀 측정 결과 반영(재고를 
 append_note(s_crud_ans, '【측정 반영】 Colab 4번 셀은 트랜잭션 안에서 pg_stat_xact_user_tables로 실제 C·R·U·D를 측정한다. 원본 정답과 다른 칸은 결제승인·배송처리의 Order Details(R) 두 칸이다. '
                         '결제 승인 때 재고를 줄이려면 주문상세의 수량을, 배송 때 송장에 상품명을 넣으려면 주문상세를 거쳐 상품을 읽어야 하기 때문이다. 주문취소 행(과제 ② 정답): Orders U, Order Details R, Payments U, Delivery D, Products U.')
 
+# ── 19·20쪽 본문: 원본 상자 높이 0.49in + 레이아웃 큰 글씨 → 둘째 줄이 표 밑으로 들어가 가려짐(Google Slides)
+#    글자 크기를 직접 정하고 상자를 표 위 공간(1.5~3.1in)에 맞춘 뒤 표를 3.2in로 내림
+for s in (s_crud_blank, s_crud_ans):
+    body = next(sh for sh in s.placeholders if sh.placeholder_format.idx == 1)
+    body.top, body.height = Inches(1.5), Inches(1.6)
+    for i, p in enumerate(body.text_frame.paragraphs):
+        for r in p.runs:
+            r.font.size = Pt(20 if i == 0 else 16)
+    tshape = next(sh for sh in s.shapes if sh.has_table)
+    tshape.top = Inches(3.2)
+
 # ── 새 쪽 C: 실습 끝내기 (결론 둘째 쪽 다음 = summary 앞)
 C = new_slide(s_conc, '실습 끝내기 | AWS RDS 삭제')
 tb(C, 0.98, 1.6, 11.4, 2.6, [
