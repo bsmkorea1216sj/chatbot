@@ -4,7 +4,7 @@
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
 ## 현재 상태
-- 12-1 설계 Part1(26) 신규 기준본(36장): 마지막 재고 1개 시나리오, Shopify 재고 상태, 주문항목·외부 결제 경계, Colab 셀을 발표자 노트에 추가. SQLite 결과 검증, 실서버 실행 전 (`cd12-1/scripts/upgrade_part1.py`).
+- 12-1 설계 Part1(26) 기준본(36장): 쿠팡 공개 주문·배송조회 사례 → 미니 쇼핑몰 요구·표 5개·웹앱 구현 및 검증. Colab 링크를 교안에 삽입했고 HTTP·DB 검증 통과. Colab 브라우저 미리보기 실행은 미확인.
 - 10-1 기준본: `CD10-1_PostgreSQL26.pptx` (48장, 강의자 편집 중). 약어 주석 전체 반영 완료
   - Colab `CD10-1_Colab_Lab(26).ipynb`: 실제 RDS 실행 확인됨(postgresql-lab-01:5433, DB=postgres), 결과 인사이트 셀 포함
 - 10-2 초안: `CD10-2_Index_Join(26).pptx` (36장, 11-04 02:39) — 원본 31장 + GitLab 사례·조인 방식 3가지·Colab 실습 3장, 노트 전체, 약어 주석, 원본 오류 5곳 수정
@@ -30,6 +30,7 @@
 | 11-1 교안(보강) | [클라우드데이터베이스기초] 11-1_데이터베이스 설계 개요(26)_보강.pptx | 1zYS43RH1IpcrfJiDsCbz95kl_Wf2du2F |
 | 11-1 Colab | CD11-1_Colab_Lab(26).ipynb | 1fQ--R38hR6exXmFtyl8wvDKpZNn9DSP1 |
 | 12-1 교안 | [클라우드데이터베이스기초] 12-1데이터베이스 설계.Part1(26).pptx | 1Gu6kZNfazuj6jpYexa_Jd7aVNd0XVwmu |
+| 12-1 Colab | CD12-1_Colab_쇼핑몰DB_웹앱(26).ipynb | 1URPntHhY0jY96psj9cK0Khrzq3gLb8KX |
 | 11-3 Colab | CD11-3_Colab_설계실습.ipynb | 1mJEtXxBEUK9THq9pVF607BVqO_vDO5Qg |
 - 주의: ID 14CJxBnMIlYSo1l6hwC7Z796F7-dVmvdr 도 이름이 CD10-1_PostgreSQL(26).pptx (예전 원본 내용) → 작업 대상 아님
 
