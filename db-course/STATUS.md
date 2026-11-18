@@ -3,6 +3,8 @@
 **마지막 갱신:** 2026-11-18 · codex
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
+**CD 작업 기록:** [CD강의.md](CD강의.md)
+
 ## 현재 상태
 - **12장 교안 흐름·약어 보강:** 이론 → Colab·과제 → 마무리. 실습 시작 12-1 32쪽, 12-2 25쪽, 12-3 54쪽. 안내표 단계별 셀 링크와 노트북 쪽수 동기화. `cloud_architecture/CA강의.md` 형식으로 약어가 나오는 70쪽에 영문 원어·한글 뜻. `cd12-series/reorder_labs.py`·`add_abbreviation_footers.py`.
 - **12장 여성 액세서리몰 연속 실습 완료:** 교안 3종(36/31/59쪽)·Colab 3종을 기존 Drive ID/파일명 그대로 갱신. 귀걸이·목걸이·헤어핀, 후속 팔찌·반지·브로치. 같은 RDS `cd12-shop-lab`·`shop` 유지. 기준/재현: `cd12-series/README.md`·`update_accessories.py`(이전 생성기 실행 뒤 마지막 보정 필수).
