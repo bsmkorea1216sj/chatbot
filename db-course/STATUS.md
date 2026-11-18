@@ -4,6 +4,7 @@
 **드라이브 폴더:** https://drive.google.com/drive/folders/1WL8_UI8wvOyqXormXoXFx4L9ykGRkxdS
 
 ## 현재 상태
+- **12장 교안 흐름·약어 보강:** 이론 → Colab·과제 → 마무리. 실습 시작 12-1 32쪽, 12-2 25쪽, 12-3 54쪽. 안내표 단계별 셀 링크와 노트북 쪽수 동기화. `cloud_architecture/CA강의.md` 형식으로 약어가 나오는 70쪽에 영문 원어·한글 뜻. `cd12-series/reorder_labs.py`·`add_abbreviation_footers.py`.
 - **12장 여성 액세서리몰 연속 실습 완료:** 교안 3종(36/31/59쪽)·Colab 3종을 기존 Drive ID/파일명 그대로 갱신. 귀걸이·목걸이·헤어핀, 후속 팔찌·반지·브로치. 같은 RDS `cd12-shop-lab`·`shop` 유지. 기준/재현: `cd12-series/README.md`·`update_accessories.py`(이전 생성기 실행 뒤 마지막 보정 필수).
 - **이어하기:** 12-1 DB·실제 화면 웹앱, 12-2 5표→7개 엔티티·결제/배송/리뷰·CRUD, 12-3 논리 열 정렬·제약·물리 최적화. 기존 예제 상품명만 전환하며 가격·재고·주문·사용자 상품 보존. 각 intro에 조건/공통 상품/다음 파트 링크, 교안 개요·노트·마무리도 정렬.
 - **종료:** 12-1·2의 DELETE API 분기를 제거하고 STOP만 제공. 12-3 마지막8번 셀에서만 최종 DELETE(실습 태그·식별자 재입력·삭제방지/상태 확인·삭제 완료 waiter). 공용 DB_HOST는 삭제 차단. 12-3 첫 `hf` 실행불가 셀은 같은 ID의 안내 markdown으로 변경.
