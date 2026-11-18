@@ -113,7 +113,9 @@ def choose_layout(page, terms, ignored):
             if rect.intersects(clip) and not any(text.startswith(prefix) for prefix in ignored):
                 blocked.append(rect)
     # Favor space immediately above any links, then the bottom margin below them.
-    link_tops=[l['from'].y0 for l in page.get_links() if l['from'].y0>h*.80]
+    link_boxes=[l['from'] for l in page.get_links() if l['from'].y0>h*.69]
+    blocked.extend(link_boxes)
+    link_tops=[r.y0 for r in link_boxes if r.y0>h*.80]
     bottom_limits=sorted(set([min(link_tops)-4] if link_tops else []),reverse=True)+[h*.982]
     for size in (12,11,10,9):
         left,width=w*.072,w*.803
@@ -125,7 +127,7 @@ def choose_layout(page, terms, ignored):
                 if not any(box.intersects(r) for r in blocked):
                     return (left,y,width,size),lines,False
     for size in (11,10,9):
-        for left,right in ((.11,.485),(.39,.875),(.075,.72),(.17,.875),(.075,.875)):
+        for left,right in ((.11,.485),(.46,.875),(.39,.875),(.075,.72),(.17,.875),(.075,.875)):
             left,width=w*left,w*(right-left)
             lines=wrapped(terms,width*.98,size)
             if any(font.text_length(line,fontsize=size)>width for line in lines):
